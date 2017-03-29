@@ -2,7 +2,7 @@
 var redis = require("redis");
 
 //Need to add config
-var url = "redis://h:p55843f5bc6952dfc491bba4494b013e5c0dd8b96f42ad6bf39156327a26a50a8@ec2-34-206-56-30.compute-1.amazonaws.com:16869" || process.env.REDIS_URL;
+var url = process.env.REDIS_URL || "redis://h:p55843f5bc6952dfc491bba4494b013e5c0dd8b96f42ad6bf39156327a26a50a8@ec2-34-206-56-30.compute-1.amazonaws.com:16869";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
 sub.subscribe('Rooms/*');
@@ -56,3 +56,4 @@ module.exports.pub = pub;
 module.exports.sub = sub;
 module.exports.addRoom = addRoom;
 module.exports.deleteRoom = deleteRoom;
+module.exports.getRooms = getRooms;

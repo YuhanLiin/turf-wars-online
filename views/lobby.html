@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Lobby</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <div id="rooms"></div>
+
+    <script>
+        var rooms = {{rooms}};
+        for (let i=0; i<rooms.length; i++){
+            let room = rooms[i];
+            $('#rooms').append(`<div>${room.id}</div>`);
+        }
+    </script>
+</body>
+</html>

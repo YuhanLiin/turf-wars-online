@@ -5,7 +5,7 @@ var fs = require("fs");
 
 var repo = require("./repository.js")
 
-function sendFile(res, filepath, type="text/html") {
+function sendFile(res, filepath, context={}, type="text/html") {
     res.setHeader("content-type", type);
     fs.readFile('.'+filepath, function (err, data) {
         if (err) {
@@ -13,6 +13,13 @@ function sendFile(res, filepath, type="text/html") {
             res.end("404: " + filepath + " not found");
         }
         else {
+            var data = data.toString();
+            for (let prop in context){
+                if (context.hasOwnProperty(prop)){
+                    console.log(prop, `{{${prop}}}`, context[prop].toString());
+                    data = data.replace(`{{${prop}}}`, context[prop].toString());
+                }
+            }
             res.end(data);
         }
     })
@@ -27,6 +34,7 @@ http.on('request', function (req, res) {
         if (path === '/') {
             sendFile(res, "/views/index.html");
         }
+        
     }
     else if (req.method === 'POST') {
         if (path === '/newRoom') {
@@ -35,8 +43,8 @@ http.on('request', function (req, res) {
         else if (path === '/lobby') {
             repo.getRooms(function (err, rooms) {
                 if (err) console.log(err.stack);
-                //Templating will be required
-                else sendFile(res, '/views/lobby.html');
+                    //Templating will be required
+                else sendFile(res, '/views/lobby.html', {rooms: JSON.stringify(rooms)});
             });
         }
     }
