@@ -5,7 +5,8 @@ var fs = require("fs");
 
 var repo = require("./repository.js")
 
-function sendFile(res, filepath) {
+function sendFile(res, filepath, type="text/html") {
+    res.setHeader("content-type", type);
     fs.readFile('.'+filepath, function (err, data) {
         if (err) {
             res.statusCode = 404;
@@ -22,7 +23,6 @@ http.on('request', function (req, res) {
     var path = urlObj.path;
     var query = urlObj.query;
 
-    res.setHeader("content-type", "text/html");
     if (req.method === 'GET') {
         if (path === '/') {
             sendFile(res, "/views/index.html");
@@ -40,6 +40,10 @@ http.on('request', function (req, res) {
             });
         }
     }
+
+    res.on("error", function(err){
+        console.log(err.stack);
+    });
 }).listen(8000);
 
 io.of('newRoom').on('connect', function (socket) {

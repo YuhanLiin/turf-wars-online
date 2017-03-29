@@ -4,7 +4,10 @@
   "description": "Online game",
   "main": "index.js",
   "scripts": {
-    "test": "node index.js"
+    "start": "node index.js"
+  },
+  "engine": {
+    "node": "6.10.0"
   },
   "author": "Yuhan Lin",
   "license": "ISC",

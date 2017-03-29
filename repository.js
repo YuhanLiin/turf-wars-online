@@ -2,9 +2,11 @@
 var redis = require("redis");
 
 //Need to add config
-var pub = redis.createClient();
-var sub = redis.createClient();
-sub.subscribe('Rooms');
+var url = "redis://h:p55843f5bc6952dfc491bba4494b013e5c0dd8b96f42ad6bf39156327a26a50a8@ec2-34-206-56-30.compute-1.amazonaws.com:16869" || process.env.REDIS_URL;
+var pub = redis.createClient(url);
+var sub = redis.createClient(url);
+sub.subscribe('Rooms/*');
+pub.flushdb();
 
 //Might be changed later
 function toRoomId(socketId) {
@@ -19,7 +21,7 @@ function addRoom(hostId, callback = (e, r) => { }) {
     var roomId = toRoomId(hostId);
     pub.multi().hset(roomId, 'host', hostId).sadd('availableRooms', roomId).exec(function (err, unused) {
         var room = Room(roomId, hostId);
-        if (!err) pub.publish("Rooms", "add", room);
+        if (!err) pub.publish("Rooms/add", JSON.stringify(room));
         callback(err, room);
     });
 }
@@ -27,7 +29,7 @@ function addRoom(hostId, callback = (e, r) => { }) {
 function deleteRoom(hostId, callback = (e, r) => { }) {
     var roomId = toRoomId(hostId);
     pub.multi().del(roomId).srem('availableRooms', roomId).exec(function (err, reply) {
-        if (!err) pub.publish('Rooms', 'delete', roomId);
+        if (!err) pub.publish('Rooms/delete', roomId);
         callback(err, reply);
     });
 }
@@ -47,7 +49,7 @@ function getRooms(callback = (e, r) => { }){
             //Run callback with the list of rooms as a param
             callback(err, rooms);
         }
-    }
+    });
 }
 
 module.exports.pub = pub;
