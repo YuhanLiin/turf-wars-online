@@ -1,5 +1,6 @@
 // JavaScript source code
-var redis = require("redis");
+var promisify = require('promisify-node');
+var redis = promisify("redis");
 
 var models = require("./models.js");
 
@@ -9,6 +10,63 @@ var pub = redis.createClient(url);
 var sub = redis.createClient(url);
 sub.subscribe('Rooms/add', 'Rooms/delete');
 pub.flushdb();
+
+//Return transaction for adding room to redis
+function addRoom(id) {
+    return redis.multi().sadd('availableRooms', id);
+}
+
+//Let user join an available room
+function joinRoom(roomId, userId) {
+    var trans;
+    //Check if the room exists
+    return redis.sismember('availableRooms', roomId)
+    .then(function (reply) {
+        //If room exists, check its length
+        if (reply) {
+            return redis.scard(roomId)
+            .then(function (len) {
+                if (len < 2) {
+                    trans = redis.multi();
+                }
+                else { console.log('FullRoom'); }
+            });
+        }
+        //Otherwise, start the transaction by adding the new room
+        else {
+            trans = addRoom(roomId);
+        }
+    })
+    .then(function () {
+        //Add the user into the room and also register the user in redis w/e a full transaction
+        redis.watch(roomId);
+        return trans.sadd(roomId, userId).hset(userId, 'room', roomId).exec();
+    });
+}
+
+//Delete a room if data associated with it does not change
+function deleteRoom(id) {
+    redis.watch(id);
+    return redis.multi().srem('availableRooms', id).exec();
+}
+
+function leaveRoom(userId) {
+    var roomId;
+    //Find room the user is mapped to
+    return redis.hget(userId, 'room')
+    .then(function (room) {
+        //Remove the user from redis and also the room
+        roomId = room;
+        return redis.multi().srem(roomId, userId).del(userId).exec();
+    })
+        //Check if the room is empty. If so, delete it
+    .then(function () { return redis.scard(roomId); })
+    .then(function (len) {
+        if (len === 0) {
+            return deleteRoom(roomId);
+        }
+    });
+}
 
 //Might be changed later
 function toRoomId(socketId) {
