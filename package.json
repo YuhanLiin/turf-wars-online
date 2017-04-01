@@ -12,6 +12,7 @@
   "author": "Yuhan Lin",
   "license": "ISC",
   "dependencies": {
+    "promisify-node": "^0.4.0",
     "redis": "^2.7.1",
     "shorthash": "0.0.2",
     "socket.io": "^1.7.3"
