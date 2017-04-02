@@ -1,25 +1,31 @@
 var http = require("http").createServer();
-var io = require("socket.io")(http);
 var url = require("url");
 var fs = require("fs");
+var formBody = require('body/form');
+var shortid = require('shortid');
 
 var repo = require("./repository.js")
+var io = require("./sockets").init(http);
 
 //Allow server to run only after redis is flushed
-repo.flushdbPromise.then(http.listen(8000));
+repo.flushPromise.then(http.listen(8000));
+
+function sendCode(res, statusCode){
+    res.statusCode = statusCode;
+    res.end(statusCode.toString()+": Something went wrong");
+}
 
 function sendFile(res, filepath, context={}, type="text/html") {
     res.setHeader("content-type", type);
     fs.readFile('.'+filepath, function (err, data) {
         if (err) {
-            res.statusCode = 404;
-            res.end("404: " + filepath + " not found");
+            sendCode(404);
         }
         else {
             var data = data.toString();
             for (let prop in context){
                 if (context.hasOwnProperty(prop)){
-                    data = data.replace(`{{${prop}}}`, context[prop].toString());
+                    data = data.split(`{{${prop}}}`).join(context[prop].toString());
                 }
             }
             res.end(data);
@@ -35,44 +41,39 @@ http.on('request', function (req, res) {
     if (req.method === 'GET') {
         if (path === '/') {
             sendFile(res, "/views/index.html");
-        }
-        
+        }      
     }
+
     else if (req.method === 'POST') {
-        if (path === '/newRoom') {
-            sendFile(res, '/views/newRoom.html');
+        //When entering a room, parse the body for the room id
+        if (path === '/room') {
+            formBody(req, function(err, body){
+                if (err) sendCode(400);
+                var roomId = body.roomId;
+                //If roomId doesnt exist, that means the user is creating a room, so a random id is generated
+                if (!roomId) roomId = shortid.generate();
+                //Render the room page with the roomId
+                sendFile(res, '/views/newRoom.html', {roomId:roomId});  
+            });    
         }
+        //Lobby will load all currently available roomIds and paste them to the page
         else if (path === '/lobby') {
-            repo.getRooms().then(function(rooms){ sendFile(res, '/views/lobby.html', {rooms:JSON.stringify(rooms)}); },
-                               function(err){ console.log(err); } );
+            repo.getRooms()
+            .then(function(rooms){ 
+                sendFile(res, '/views/lobby.html', {rooms:JSON.stringify(rooms)}); 
+            })
+            //Get room errors are 500 errors
+            .catch(function(err){
+                console.log(err);
+                sendCode(500);
+            });
         }
     }
 
     res.on("error", function(err){
-        console.log(err.stack);
+        console.log(err);
     });
 });
 
 
-io.of('newRoom').on('connect', function (socket) {
-    repo.addRoom(socket.id)
-    .catch(function(err){ console.log(err); });
-
-    socket.on("disconnect", function () {
-        repo.deleteRoom(socket.id)
-        .catch(function(err){ console.log(err); });
-    });
-});
-
-io.of('lobby').on('connect', function (socket) {
-    function pubsubHandler(channel, message){
-        console.log(channel);
-        socket.emit(channel.replace('Rooms/', ''), message);
-    }
-
-    repo.sub.on("message", pubsubHandler);
-
-    socket.on('disconnect', function (){
-        repo.sub.removeListener("message", pubsubHandler);
-    })
-});
+    

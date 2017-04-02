@@ -7,9 +7,15 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+    <h2>{{roomId}}</h2>
     <script>
-        var socket = io('/newRoom');
-
+        var socket = io('/room');
+        var roomId = "{{roomId}}";
+        socket.emit('roomId', roomId);
+        //Change issue handling later
+        socket.on('issue', function(issue){
+            console.log(issue);
+        })
     </script>
 </body>
 </html>

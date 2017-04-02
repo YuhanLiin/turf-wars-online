@@ -12,8 +12,9 @@
     <div id="rooms"></div>
 
     <script>
-        function add2Rooms(room){
-            $('#rooms').append(`<div id="${room.id}">${room.id} hosted by ${room.host}</div>`);
+        function add2Rooms(roomId){
+            $('#rooms').append(
+                `<div id="${roomId}"><form method="post" action="/room"><input type="hidden" name="roomId" value="${roomId}"><input type="submit" class="room-link" value="Room ${roomId}"></form></div>`);
         }
 
         var rooms = {{rooms}};
@@ -23,11 +24,11 @@
         }
 
         var socket = io('/lobby');
-        socket.on('add', function(roomJson){
-            add2Rooms(JSON.parse(roomJson));
+        socket.on('add', function(roomId){
+            add2Rooms(roomId);
         })
         .on('delete', function(roomId){
-            $('#rooms').remove('#'+roomId);
+            $('#'+roomId).remove();
         })
     </script>
 </body>
