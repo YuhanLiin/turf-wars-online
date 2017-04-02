@@ -5,6 +5,9 @@ var fs = require("fs");
 
 var repo = require("./repository.js")
 
+//Allow server to run only after redis is flushed
+repo.flushdbPromise.then(http.listen(8000));
+
 function sendFile(res, filepath, context={}, type="text/html") {
     res.setHeader("content-type", type);
     fs.readFile('.'+filepath, function (err, data) {
@@ -48,7 +51,7 @@ http.on('request', function (req, res) {
     res.on("error", function(err){
         console.log(err.stack);
     });
-}).listen(8000);
+});
 
 
 io.of('newRoom').on('connect', function (socket) {
