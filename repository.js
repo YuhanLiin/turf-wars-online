@@ -5,7 +5,7 @@ var redis = bluebird.promisifyAll(require("redis"));
 var url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
-sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*');
+sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*');
 var flushPromise = pub.flushdbAsync();
 
 //Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
@@ -170,29 +170,33 @@ function selectChar(userId, character){
     var room, chars;
     pub.watch(userId);
     return pub.hgetAsync(userId, 'room')
-    pub.watch(roomId);
-    .then(roomId=>pub.smembersAsync(roomId))
-    .then(function(roomList){
-        room = roomList;
-        if (room.includes(userId)){
-            char = room.map(function(otherUser){
-                if (otherUser !== userId) return pub.hgetAsync(otherUser, 'character');
-                else return character;
-            });
-            return Promise.all(chars);
-            .then(results=>results.reduce((acc, val)=>acc && val))
+    .then(function(roomId){
+        if (roomId) {
+            pub.watch(roomId);
+            return pub.smembersAsync(roomId);
         }
         safeThrow('UnregisteredUser');
     })
-    .then(function(allSelected){
+    .then(function(roomList){      
+        room = roomList;
+        var promises = room.map(function(otherUser){
+            if (otherUser !== userId) return pub.hgetAsync(otherUser, 'character');
+            else return Promise.resolve(character);
+        });
+        return Promise.all(promises)
+        .then(function (results) {
+            chars = results;
+            return results.reduce((acc, val) =>acc && val)
+        });
+    })
+    .then(function (allSelected) {
+        var trans = pub.multi().hset(userId, 'character', character);
         if (allSelected) {
-            var charMappings = room.reduce(function (json, userId, i){
-                json[userId] = char[i];
-            }, {});
-            return pub.multi().hset(userId, 'character', character).
-            publish('CreateGame/'+userId, charMappings).execAsync();
+            var charMappings = {};
+            room.map((userId, i) =>charMappings[userId] = chars[i]);
+            return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
-        return pub.multi().hset(userId, 'character', character).execAsync();
+        return trans.execAsync();
     });
 }
 
@@ -202,3 +206,4 @@ module.exports.sub = sub;
 module.exports.joinRoom = joinRoom;
 module.exports.leaveRoom = leaveRoom;
 module.exports.getRooms = getRooms;
+module.exports.selectChar = selectChar;

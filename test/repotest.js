@@ -60,9 +60,9 @@ describe('joinRoom()', function(){
         .then(gameRooms=>assert.deepStrictEqual(gameRooms, ['Game:room1']))
         //Change user mappings
         .then(()=>repo.pub.hgetAsync('user1', 'room'))
-        .then(room=>assert('Game:room1'), 'user1 should be mapped to gameroom')
+        .then(room=>assert.strictEqual(room, 'Game:room1'), 'user1 should be mapped to gameroom')
         .then(()=>repo.pub.hgetAsync('user2', 'room'))
-        .then(room=>assert('Game:room1'), 'user2 should be mapped to gameroom')
+        .then(room=>assert.strictEqual(room, 'Game:room1'), 'user2 should be mapped to gameroom')
     });
 
     it('should emit game related events', function(){
@@ -162,8 +162,8 @@ describe('leaveRoom()', function(){
     })
 });
 
-describe('getRooms()', function(){
-    afterEach(function(){ 
+describe('getRooms()', function () {
+    afterEach(function () {
         return repo.pub.flushdbAsync();
     });
 
@@ -174,11 +174,50 @@ describe('getRooms()', function(){
 
     it('should return all room ids', function () {
         return repo.joinRoom('room1', 'a')
-        .then(()=>repo.joinRoom('room2', 'b'))
-        .then(()=>repo.getRooms())
+        .then(() =>repo.joinRoom('room2', 'b'))
+        .then(() =>repo.getRooms())
         .then(rooms=>assert.deepStrictEqual(rooms.sort, ['room1', 'room2'].sort))
-        .then(()=>repo.leaveRoom('b'))
-        .then(()=>repo.getRooms())
+        .then(() =>repo.leaveRoom('b'))
+        .then(() =>repo.getRooms())
         .then(rooms=>assert.deepStrictEqual(rooms, ['room1']));
     });
+});
+
+describe('selectChar()', function () {
+    before(function () {
+        return repo.joinRoom('room1', 'user1')
+        .then(() =>repo.joinRoom('room1', 'user2'))
+        .then(()=>notifs = []);
+    });
+
+    it('should throw for unregistered users', function () {
+        return repo.selectChar('user3', 'char')
+        .then(function () {
+            assert.fail('Should have thrown');
+        },
+        function (err) {
+            assert.strictEqual(err, 'UnregisteredUser');
+        });
+    });
+
+    it("should update user's char selection", function () {
+        return repo.selectChar('user1', 'char')
+        .then(() =>repo.pub.hgetAsync('user1', 'character'))
+        .then(char=>assert.deepStrictEqual(char, 'char'));
+    });
+
+    it("should send notif when both users have selected characters", function () {
+        return repo.selectChar('user2', 'char2')
+        .then(() =>repo.pub.hgetAsync('user2', 'character'))
+        .then(char=>assert.deepStrictEqual(char, 'char2', 'should have set char2'))
+        .then(function () {
+            for (let i = 0; i < notifs.length; i++) {
+                if (notifs[i].startsWith('CreateGame/user2')) {
+                    var json = JSON.parse(notifs[i].replace('CreateGame/user2', ''));
+                    return assert.deepStrictEqual(json, { 'user1': 'char', 'user2': 'char2' }, 'should send right notif');
+                }
+            }
+            return assert.fail('should send notif');
+        });
+    })
 })
