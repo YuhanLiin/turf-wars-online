@@ -8,6 +8,23 @@ var sub = redis.createClient(url);
 sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*');
 var flushPromise = pub.flushdbAsync();
 
+//Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
+//action takes (trans, userId)
+function broadcast(trans, roomId, action, extra){
+    return pub.smembersAsync(roomId)
+    .then(function(room){
+        if (extra) room.push(extra);
+        room.map(userId=>action(trans, userId));
+        return trans;
+    });
+}
+
+//Unwatches then throws
+function safeThrow(message){
+    pub.unwatch();
+    throw message;
+}
+
 //Append actions for adding a room to a transaction
 function addRoom(trans, id) {
     return trans.sadd('availableRooms', id).publish('Rooms/add', id);
@@ -17,21 +34,20 @@ function addUser2Room(trans, roomId, userId){
     return trans.sadd(roomId, userId).hset(userId, 'room', roomId); //set user object's room mapping
 }
 
-//Append to transaction steps for turning an available room into a game room
-function upgradeRoom(trans, roomId, users, newUser){
+//Append to transaction steps for turning an available room into a game room. 
+//Returns promise that returns the transaction
+function upgradeRoom(trans, roomId, newUser){
     //The new id with the Game: prefix
     var gameId = roomId.replace('Room:', 'Game:');
     //First delete the room from the available rooms
     trans.srem('availableRooms', roomId).publish('Rooms/delete', roomId)
     //Then rename the room and add it to game rooms
     .rename(roomId, gameId).sadd('gameRooms', gameId).publish('Games/add', gameId);
-    //Send start game notifications to everyone in the room and change their room mappings
-    users.push(newUser);
-    for (let i=0; i<users.length; i++){
-        trans.publish('StartGame/'+users[i], '').hset(users[i], 'room', gameId);
-    }
+    //Send start game notifications to everyone in the room and change their room mappings  
+    return broadcast(trans, roomId, 
+        (trans, userId)=>trans.publish('StartGame/'+userId, '').hset(userId, 'room', gameId),
+        newUser);
     //TODO add logic for creating game object
-    return trans;
 }
 
 //Let user join an available room
@@ -47,16 +63,14 @@ function joinRoom(roomId, userId) {
     return pub.existsAsync(userId)
     .then(function(reply){
         if (reply){
-            pub.unwatch()
-            throw 'UserExists';
+            safeThrow('UserExists');
         }
     })
     //Make sure a game with same id doesnt exist to prevent game overwrite attacks
     .then(()=>pub.existsAsync(gameId))
     .then(function(reply){
         if (reply){
-            pub.unwatch()
-            throw 'GameExists'
+            safeThrow('GameExists');
         }
     })
     //Check # of users in room
@@ -64,8 +78,7 @@ function joinRoom(roomId, userId) {
     .then(function (len) {
         //If room is full, reject the join
         if (len >= 2) {
-            pub.unwatch();
-            throw "FullRoom";
+            safeThrow("FullRoom");
         }
         else {
             //User is added to room regardless
@@ -76,8 +89,8 @@ function joinRoom(roomId, userId) {
             }
             //If room has 1 member, add new user and upgrade the room to a game room
             else{
-                return pub.smembersAsync(roomId)
-                .then( (users)=> upgradeRoom(trans, roomId, users, userId).execAsync() );
+                return upgradeRoom(trans, roomId, userId)
+                .then( (trans)=> trans.execAsync() );
             }
         }
     })   
@@ -94,17 +107,14 @@ function deleteRoom(trans, id) {
     return trans.srem('availableRooms', id).del(id).publish('Rooms/delete', id);
 }
 
-//Append action for deleting a game after a user disconnects
-function disconnectGame(trans, roomId, users) {
+//Append action for deleting a game after a user disconnects. Returns promise
+function disconnectGame(trans, roomId) {
     //Delete the game room and send corresponding notification
     trans.del(roomId).srem('gameRooms', roomId).publish('Games/delete', roomId);
     //Send a disconnected notification to all remaining users and disconnect them
-    for (let i=0; i<users.length; i++){
-        let user = users[i];
-        trans.publish('EndGame/disconnect/'+user, '').del(user);
-    }
+    return broadcast(trans, roomId, 
+        (trans, userId)=>trans.publish('EndGame/disconnect/'+userId, '').del(userId));
     //TODO clean up game object
-    return trans;
 }
 
 //Let a user leave his current room
@@ -134,8 +144,8 @@ function leaveRoom(userId) {
         }
         //If the room is a game room, handle the user disconnection
         else if (roomId.startsWith('Game:')){
-            return pub.smembersAsync(roomId)
-            .then( users=>disconnectGame(trans, roomId, users).execAsync() );
+            return disconnectGame(trans, roomId)
+            .then( trans=>trans.execAsync() );
         }
         else{
             return trans.execAsync();
@@ -154,6 +164,36 @@ function leaveRoom(userId) {
 function getRooms(){
     return pub.smembersAsync('availableRooms')
     .then(rooms=>rooms.map(roomId=>roomId.replace('Room:', '')));
+}
+
+function selectChar(userId, character){
+    var room, chars;
+    pub.watch(userId);
+    return pub.hgetAsync(userId, 'room')
+    pub.watch(roomId);
+    .then(roomId=>pub.smembersAsync(roomId))
+    .then(function(roomList){
+        room = roomList;
+        if (room.includes(userId)){
+            char = room.map(function(otherUser){
+                if (otherUser !== userId) return pub.hgetAsync(otherUser, 'character');
+                else return character;
+            });
+            return Promise.all(chars);
+            .then(results=>results.reduce((acc, val)=>acc && val))
+        }
+        safeThrow('UnregisteredUser');
+    })
+    .then(function(allSelected){
+        if (allSelected) {
+            var charMappings = room.reduce(function (json, userId, i){
+                json[userId] = char[i];
+            }, {});
+            return pub.multi().hset(userId, 'character', character).
+            publish('CreateGame/'+userId, charMappings).execAsync();
+        }
+        return pub.multi().hset(userId, 'character', character).execAsync();
+    });
 }
 
 module.exports.flushPromise = flushPromise;
