@@ -190,6 +190,10 @@ describe('selectChar()', function () {
         .then(()=>notifs = []);
     });
 
+    after(function () {
+        return repo.pub.flushdbAsync();
+    })
+
     it('should throw for unregistered users', function () {
         return repo.selectChar('user3', 'char')
         .then(function () {
@@ -201,9 +205,12 @@ describe('selectChar()', function () {
     });
 
     it("should update user's char selection", function () {
+        notifs = [];
         return repo.selectChar('user1', 'char')
         .then(() =>repo.pub.hgetAsync('user1', 'character'))
-        .then(char=>assert.deepStrictEqual(char, 'char'));
+        .then(char=>assert.strictEqual(char, 'char'))
+        //Make sure notif dont send prematurely
+        .then(() =>assert.deepStrictEqual([], notifs));
     });
 
     it("should send notif when both users have selected characters", function () {

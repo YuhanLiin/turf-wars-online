@@ -166,32 +166,41 @@ function getRooms(){
     .then(rooms=>rooms.map(roomId=>roomId.replace('Room:', '')));
 }
 
+//Have the player select a character after joining a game
 function selectChar(userId, character){
     var room, chars;
     pub.watch(userId);
+    //Find out which room the user is in
     return pub.hgetAsync(userId, 'room')
-    .then(function(roomId){
-        if (roomId) {
+    .then(function (roomId) {
+        //Gather all members in the user's room
+        if (roomId && roomId.startsWith('Game:')) {
             pub.watch(roomId);
             return pub.smembersAsync(roomId);
         }
+        //If user doesnt exist or is not in game room, throw error
         safeThrow('UnregisteredUser');
     })
     .then(function(roomList){      
         room = roomList;
+        //Make a list of the characters each user has picked so far
         var promises = room.map(function(otherUser){
             if (otherUser !== userId) return pub.hgetAsync(otherUser, 'character');
             else return Promise.resolve(character);
         });
         return Promise.all(promises)
+        //See if everyone has picked a character
         .then(function (results) {
             chars = results;
             return results.reduce((acc, val) =>acc && val)
         });
     })
     .then(function (allSelected) {
+        //Regardless of result, the user's character mapping will be updated
         var trans = pub.multi().hset(userId, 'character', character);
+        //If everyone has selected a char, then tell the last user to create the game on its server
         if (allSelected) {
+            //Send the mappings to the user to create game
             var charMappings = {};
             room.map((userId, i) =>charMappings[userId] = chars[i]);
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
