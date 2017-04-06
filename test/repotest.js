@@ -221,10 +221,10 @@ describe('selectChar()', function () {
             for (let i = 0; i < notifs.length; i++) {
                 if (notifs[i].startsWith('CreateGame/user2')) {
                     var json = JSON.parse(notifs[i].replace('CreateGame/user2', ''));
-                    return assert.deepStrictEqual(json, { 'user1': 'char', 'user2': 'char2' }, 'should send right notif');
+                    return assert.deepStrictEqual(json, { 'user1': 'char', 'user2': 'char2', 'gameId': 'Game:room1' }, 'should send right notif');
                 }
             }
             return assert.fail('should send notif');
         });
-    })
+    });
 })

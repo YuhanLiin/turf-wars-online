@@ -168,7 +168,7 @@ function getRooms(){
 
 //Have the player select a character after joining a game
 function selectChar(userId, character){
-    var room, chars;
+    var room, chars, gameId;
     pub.watch(userId);
     //Find out which room the user is in
     return pub.hgetAsync(userId, 'room')
@@ -176,6 +176,7 @@ function selectChar(userId, character){
         //Gather all members in the user's room
         if (roomId && roomId.startsWith('Game:')) {
             pub.watch(roomId);
+            gameId = roomId;
             return pub.smembersAsync(roomId);
         }
         //If user doesnt exist or is not in game room, throw error
@@ -200,13 +201,22 @@ function selectChar(userId, character){
         var trans = pub.multi().hset(userId, 'character', character);
         //If everyone has selected a char, then tell the last user to create the game on its server
         if (allSelected) {
-            //Send the mappings to the user to create game
-            var charMappings = {};
+            //Send the mappings and the gameId to the user to create game and set handler for this specific game
+            var charMappings = {'gameId': gameId};
             room.map((userId, i) =>charMappings[userId] = chars[i]);
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
         return trans.execAsync();
     });
+}
+
+//Publish a gameplay notification to the user's game
+function notifyGame(userId, notifType, message) {
+    return pub.hgetAsync(userId, 'room')
+    .then(function (gameId) {
+        if (gameId)
+            pub.publish(`Gameplay/${gameId}/${notifType}/${userId}`, message);
+    })
 }
 
 module.exports.flushPromise = flushPromise;

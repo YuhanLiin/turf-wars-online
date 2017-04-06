@@ -18,9 +18,29 @@ function init(http){
                 console.log(err);
             });
         });
+
+        var ownedGame;
+        function pubsubHandler(pattern, channel, message) {
+            if (channel === 'StartGame/' + socket.id) {
+                socket.emit('startGame');
+            }
+            else if (channel === 'CreateGame/' + socket.id) {
+                socket.emit('createGame');
+                var gameJson = JSON.parse(message);
+                ownedGame = gameJson.gameId;
+                //TODO add logic for creating the game
+            }
+            else if (channel === 'EndGame/disconnect' + socket.id) {
+                socket.emit('disconnectWin');
+                //TODO add logic for cleaning up the game
+            }
+            //TODO gameplay notifs
+        }
+        repo.sub.on("pmessage", pubsubHandler);
         
         //Leave room on disconnect 
         socket.on("disconnect", function () {
+            repo.sub.removeListener("pmessage", pubsubHandler);
             repo.leaveRoom(socket.id)
             .catch(err=> console.log(err));
         });
@@ -28,12 +48,12 @@ function init(http){
 
     //The lobby where all available rooms are shown
     io.of('lobby').on('connect', function (socket) {
+
         //Redirect all Rooms/ redis notifications to the socket
         function pubsubHandler(pattern, channel, message){
             if (pattern === 'Rooms/*')
                 socket.emit(channel.replace('Rooms/', ''), message.replace('Room:', ''));
         }
-
         repo.sub.on("pmessage", pubsubHandler);
 
         //Clean up the handler after disconnecting
