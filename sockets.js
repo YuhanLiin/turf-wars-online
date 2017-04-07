@@ -15,18 +15,19 @@ function init(http){
         //The client immediately sends a roomId event to the server, which makes socket join the room
         socket.on('roomId', function(roomId){
             //If invalid id is given (XSS attack), emit error string
-            if (!shortid.isValid(roomId)) socket.emit('issue', 'InvalidRoomId');
-            repo.joinRoom(roomId, socket.id);
+            if (!shortid.isValid(roomId)) socket.emit('issue', 'InvalidRoomId')
+            else repo.joinRoom(roomId, socket.id);
         });
 
         //When character is selected, check if the character is valid (TODO) send the info to repo
-        socket.on('selectChar', function(char)){
+        socket.on('selectChar', function (char) {
             repo.selectChar(socket.id, char);
-        }
+        });
 
         var ownedGame;
         function pubsubHandler(pattern, channel, message) {
             if (channel === 'StartGame/' + socket.id) {
+                console.log(channel);
                 socket.emit('startGame');
             }
             else if (channel === 'CreateGame/' + socket.id) {

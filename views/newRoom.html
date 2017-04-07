@@ -13,8 +13,11 @@
         var roomId = "{{roomId}}";
         socket.emit('roomId', roomId);
         //Change issue handling later
-        socket.on('issue', function(issue){
+        socket.on('issue', function (issue) {
             console.log(issue);
+        });
+        socket.on('startGame', function () {
+            console.log('startGame');
         })
     </script>
 </body>

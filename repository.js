@@ -11,7 +11,7 @@ var flushPromise = pub.flushdbAsync();
 //Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
 //action takes (trans, userId)
 function broadcast(trans, roomId, action, extra){
-    return pub.smembersAsync(roomId)
+    return pub.multi().smembers(roomId).execAsync()
     .then(function(room){
         if (extra) room.push(extra);
         room.map(userId=>action(trans, userId));
@@ -45,7 +45,7 @@ function upgradeRoom(trans, roomId, newUser){
     .rename(roomId, gameId).sadd('gameRooms', gameId).publish('Games/add', gameId);
     //Send start game notifications to everyone in the room and change their room mappings  
     return broadcast(trans, roomId, 
-        (trans, userId)=>trans.publish('StartGame/'+userId, '').hset(userId, 'room', gameId),
+        (trans, userId) => trans.publish('StartGame/' + userId, '').hset(userId, 'room', gameId),
         newUser);
     //TODO add logic for creating game object
 }
@@ -55,27 +55,31 @@ function joinRoom(roomId, userId) {
     //Prepend Room: in front of id
     var gameId = 'Game:' + roomId;
     roomId = 'Room:' + roomId;
-    //These variables are the ones that get checked, so they need to be watched
-    pub.watch(roomId);
-    pub.watch(userId);
-    pub.watch(gameId);
+    console.log(roomId, userId);
     //First see if user has already been registered. If so, stop immediately to prevent same user getting added twice
-    return pub.existsAsync(userId)
-    .then(function(reply){
-        if (reply){
+    return pub.multi().exists(userId)
+     //Make sure a game with same id doesnt exist to prevent game overwrite attacks
+    .exists(gameId)
+    //Check # of users in room
+    .scard(roomId).execAsync()
+    .then(function (results) {
+        console.log(roomId, userId, 'watch');
+        //These variables got checked, so they need to be watched
+        pub.watch(roomId);
+        pub.watch(userId);
+        pub.watch(gameId);
+
+        var userExists = results[0];
+        var gameExists = results[1];
+        var len = results[2];
+
+        if (userExists){
             safeThrow('UserExists');
         }
-    })
-    //Make sure a game with same id doesnt exist to prevent game overwrite attacks
-    .then(()=>pub.existsAsync(gameId))
-    .then(function(reply){
-        if (reply){
+        if (gameExists) {
             safeThrow('GameExists');
         }
-    })
-    //Check # of users in room
-    .then(()=>pub.scardAsync(roomId))
-    .then(function (len) {
+        console.log(roomId, userId, len);
         //If room is full, reject the join
         if (len >= 2) {
             safeThrow("FullRoom");
@@ -84,8 +88,8 @@ function joinRoom(roomId, userId) {
             //User is added to room regardless
             var trans = addUser2Room(pub.multi(), roomId, userId);
             //If room is empty/doesnt exist, add the room and then add the user to the room 
-            if (len === 0){
-                return addRoom(trans, roomId).execAsync();
+            if (len === 0) {
+                return addRoom(trans, roomId).execAsync().then(console.log(roomId, userId, 'exec'));
             }
             //If room has 1 member, add new user and upgrade the room to a game room
             else{
@@ -95,9 +99,11 @@ function joinRoom(roomId, userId) {
         }
     })   
     //If transaction fails because of watch, try it again
-    .then(function(reply){
-        if (reply === null)
+    .then(function (reply) {
+        if (reply === null) {
+            console.log('transaction failed');
             return joinRoom(roomId, userId);
+        }
         return reply;
     });
 }
