@@ -61,11 +61,10 @@ function process(inputCode) {
 //Creates new input processor object that contains 3 record objects
 module.exports.create = function (socketId) {
     return {
-        //Movement inputs are buffered for 40 ms because that's how often the browsers sends held down inputs
+        //Inputs are held for 45 ms because that's how often the browsers sends held down inputs
         _vertRecord: Object.create(Record).init(45, socketId),
         _horiRecord: Object.create(Record).init(45, socketId),
-        //Skill inputs are buffered longer
-        _skillRecord: Object.create(Record).init(200, socketId),
+        _skillRecord: Object.create(Record).init(45, socketId),
         process: process
     }
 };
