@@ -2,11 +2,10 @@ var assert = require('assert');
 var repo = require('../repository.js');
 
 var notifs = [];
-before(function(){
-    repo.sub.on('pmessage', function(pattern, channel, message){
-        notifs.push(channel+message);
-    });
+repo.sub.on('pmessage', function(pattern, channel, message){
+    notifs.push(channel+message);
 });
+
 
 describe('joinRoom()', function(){
     after(function(){ 
@@ -184,15 +183,16 @@ describe('getRooms()', function () {
 });
 
 describe('selectChar()', function () {
+    after(function(){ 
+        notifs = [];
+        return repo.pub.flushdbAsync();
+    });
+
     before(function () {
         return repo.joinRoom('room1', 'user1')
         .then(() =>repo.joinRoom('room1', 'user2'))
         .then(()=>notifs = []);
     });
-
-    after(function () {
-        return repo.pub.flushdbAsync();
-    })
 
     it('should throw for unregistered users', function () {
         return repo.selectChar('user3', 'char')
@@ -227,4 +227,23 @@ describe('selectChar()', function () {
             return assert.fail('should send notif');
         });
     });
-})
+});
+
+describe('notifyGame()', function(){
+    after(function(){ 
+        notifs = [];
+        return repo.pub.flushdbAsync();
+    });
+
+    it('should ignore nonexistent users', function(){
+        return repo.notifyGame('user', 'message')
+        .then(()=>assert.deepStrictEqual([], notifs));
+    });
+
+    it('should send correct notification', function(){
+        return repo.joinRoom('room1', 'user1')
+        .then(()=>repo.joinRoom('room1', 'user2'))
+        .then(()=>repo.notifyGame('user1', 'message'))
+        .then(()=>assert(notifs.includes('Input/Game:room1'+'user1:message')));
+    });
+});

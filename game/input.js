@@ -1,5 +1,4 @@
 var repo = require('../repository.js');
-//Add sub
 
 //Prototype for object that tracks the user input for one type of input
 var Record = {
@@ -14,24 +13,25 @@ var Record = {
 
     //Every time the input is entered, update the last time the input was pressed
     set(inputCode) {
-        this.lastpress = Date.now();
+        this.lastPress = Date.now();
         //If the input is different than the current input, send notif to redis
         if (this.input !== inputCode) {
             this.input = inputCode;
-            repo.notifyGame(this.userId, 'changeInput', input);
+            repo.notifyGame(this.userId, inputCode);
         }
         this._timedReset();
     },
 
     //Keeps the input for the buffered time limit, then flush it after if nothing was entered in between
     _timedReset() {
+        var self = this;
         setTimeout(function () {
-            if (Date.now() - this.lastpress >= this.bufferTime) {
-                this.input = '';
+            if (Date.now() - self.lastPress >= self.bufferTime) {
+                self.input = '';
                 //Send redis notif for flushed input
-                repo.notifyGame(this.userId, 'changeInput', input);
+                repo.notifyGame(self.userId, self.input);
             }
-        }, this.bufferTime+1);
+        }, self.bufferTime+1);
     }
 };
 
@@ -59,11 +59,11 @@ function process(inputCode) {
 };
 
 //Creates new input processor object that contains 3 record objects
-module.exports.init = function (socketId) {
+module.exports.create = function (socketId) {
     return {
         //Movement inputs are buffered for 40 ms because that's how often the browsers sends held down inputs
-        _vertRecord: Object.create(Record).init(40, socketId),
-        _horiRecord: Object.create(Record).init(40, socketId),
+        _vertRecord: Object.create(Record).init(45, socketId),
+        _horiRecord: Object.create(Record).init(45, socketId),
         //Skill inputs are buffered longer
         _skillRecord: Object.create(Record).init(200, socketId),
         process: process

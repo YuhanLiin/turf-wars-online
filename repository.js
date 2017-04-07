@@ -5,7 +5,7 @@ var redis = bluebird.promisifyAll(require("redis"));
 var url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
-sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*');
+sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*');
 var flushPromise = pub.flushdbAsync();
 
 //Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
@@ -210,13 +210,15 @@ function selectChar(userId, character){
     });
 }
 
-//Publish a gameplay notification to the user's game
-function notifyGame(userId, notifType, message) {
+//Publish an input notification to the user's game. Message is user's id and the contents of notification
+function notifyGame(userId, message) {
     return pub.hgetAsync(userId, 'room')
     .then(function (gameId) {
-        if (gameId)
-            pub.publish(`Gameplay/${gameId}/${notifType}/${userId}`, message);
-    })
+        if (gameId){
+            return pub.multi().publish(`Input/${gameId}`, `${userId}:${message}`).execAsync();
+        }
+        return Promise.resolve();
+    });
 }
 
 module.exports.flushPromise = flushPromise;
@@ -226,3 +228,4 @@ module.exports.joinRoom = joinRoom;
 module.exports.leaveRoom = leaveRoom;
 module.exports.getRooms = getRooms;
 module.exports.selectChar = selectChar;
+module.exports.notifyGame = notifyGame;
