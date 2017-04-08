@@ -1,6 +1,6 @@
 var newid = require('shortid').generate;
-var bluebird = require('bluebird');
-var redis = bluebird.promisifyAll(require("redis"));
+var Promise = require('bluebird');
+var redis = Promise.promisifyAll(require("redis"));
 
 //Client from repo. Returns the Lock class
 var pub;
@@ -42,10 +42,21 @@ Lock.prototype.unlock = function(){
 
 //Takes list of locks and acquires them all. If anyone fails then everyone fails
 Lock.multiLock = function(args){
-    return Promise.all(args.map(lk=>lk.lock()));
+    return Promise.all(args.map(lk=>lk.lock()))
+    .catch(function(err){
+        //When a multilock fails midway, the locks already set need to be removed since transaction failed
+        if (err === 'LockFailed') {
+            return Lock.multiUnlock(args)
+            .then(function(){
+                throw err;
+            });
+        }
+        //Propagate error to client in all cases
+        throw err;
+    })
 }
 
-//Takes a list of locks and releases them. Doesnt fail
+//Takes a list of locks and releases them. Doesnt throw
 Lock.multiUnlock = function(args){
     return Promise.all(args.map(lk=>lk.unlock()));
 }

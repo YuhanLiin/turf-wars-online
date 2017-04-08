@@ -42,7 +42,7 @@ describe('/room', function () {
     });
 
     it.only('should start game when 2 players are in the room', function (done) {
-        this.timeout(1000);
+        this.timeout(2000);
         var id = sid();
         var c2 = RoomClient();
         c2.emit('roomId', id)
@@ -54,7 +54,7 @@ describe('/room', function () {
         setTimeout(function () {
             //assert.deepStrictEqual(c2.notifs, ['startGame']);
             //assert.deepStrictEqual(c3.notifs, ['startGame']);
-        }, 1000);
+        }, 2000);
         
     });
     

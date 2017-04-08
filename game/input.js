@@ -7,6 +7,7 @@ var Record = {
         this.lastPress = Date.now();
         this.input = '';
         this.bufferTime = bufferTime;
+        //User id to send as notif
         this.userId = userId;
         return this;
     },
