@@ -8,6 +8,8 @@ var sub = redis.createClient(url);
 sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*');
 var flushPromise = pub.flushdbAsync();
 
+var Lock = require('lock.js')(pub);
+
 //Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
 //action takes (trans, userId)
 function broadcast(trans, roomId, action, extra){
@@ -19,10 +21,23 @@ function broadcast(trans, roomId, action, extra){
     });
 }
 
-//Unwatches then throws
-function safeThrow(message){
-    pub.unwatch();
+//Releases some locks then throws
+function safeThrow(message, ...args){
+    Lock.multiUnlock(args);
     throw message;
+}
+
+//Generates a retry continuation in case a transaction fails due to locking. Placed into .catch clause
+function transRetry(func, ...args){
+    return function (err) {
+        //If locking error is caught, log it and apply the input args to the function to try again
+        if (err === 'LockFailed') {
+            console.log('transaction retry');
+            return func.apply(undefined, args);
+        }
+        //Propagate other errors
+        throw err;
+    }
 }
 
 //Append actions for adding a room to a transaction
@@ -98,14 +113,7 @@ function joinRoom(roomId, userId) {
             }
         }
     })   
-    //If transaction fails because of watch, try it again
-    .then(function (reply) {
-        if (reply === null) {
-            console.log('transaction failed');
-            return joinRoom(roomId, userId);
-        }
-        return reply;
-    });
+    .catch(transRetry(joinRoom, roomId, userId));
 }
 
 //Append actions for deleting a room to a transaction
@@ -158,12 +166,7 @@ function leaveRoom(userId) {
         }
     })
     //If transaction fails from watch, try again
-    .then(function(reply){
-        if (reply===null){
-            return leaveRoom(userId);
-        }
-        return reply;
-    });
+    .catch(transRetry(leaveRoom, userId));
 }
 
 //Retrieve all available rooms without the Room: prefix
@@ -213,7 +216,8 @@ function selectChar(userId, character){
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
         return trans.execAsync();
-    });
+    })
+    .catch(transRetry(selectChar, userId, character));
 }
 
 //Publish an input notification to the user's game. Message is user's id and the contents of notification
