@@ -7,43 +7,46 @@ var pub = redis.createClient(url);
 var sub = redis.createClient(url);
 sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*');
 var flushPromise = pub.flushdbAsync();
+sub.setMaxListeners(400);
 
 var Lock = require('./lock.js')(pub);
+//Simple promisified settimeout
+function delay(ms){
+    return new Promise(function (resolve){
+        setTimeout(resolve, ms);
+    });
+}
 
 //Applies a set of transaction modifications for every user in a given room. Returns promise returning transaction
-//action takes (trans, userId)
+//action takes (trans, userId) and must return individual promises to be fulfilled
 function broadcast(trans, roomId, action, extra){
     return pub.multi().smembers(roomId).execAsync()
     .then(function(batch){
         var room = batch[0];
         if (extra) room.push(extra);
-        room.map(userId=>action(trans, userId));
-        return trans;
+        return Promise.all(room.map(userId=>action(trans, userId))).then(()=>trans);
     });
-}
-
-//Releases some locks then throws
-function safeThrow(message, locks){
-    Lock.multiUnlock(locks)
-    .then(()=>{throw message;});
 }
 
 //Generates function that cleans up the locks at end of transaction. Put in .finally
 function transUnlock(locks){
     return function(){
-        return Lock.multiUnlock(locks);
+        return Lock.multiUnlock(locks)
     }
 }
 
 //Generates a retry continuation in case a transaction fails due to locking. Put in .catch
 function transRetry(func, ...args){
     return function (err) {
-        //If locking error is caught, log it and apply the input args to the function to try again
+        //If locking error is caught, log it and apply the input args to the function to try again after some delay
         if (err === 'LockFailed') {
-            console.log('transaction retry');
-            return func.apply(undefined, args);
+            return delay(Math.random()*20)
+            .then(function(){
+               console.log(func.name, 'transaction retry');
+                return func.apply(undefined, args); 
+            })               
         }
-        //Propagate other errors to transUnlock, which will 
+        //Propagate errors
         throw err;
     }
 }
@@ -59,7 +62,7 @@ function addUser2Room(trans, roomId, userId){
 
 //Append to transaction steps for turning an available room into a game room. 
 //Returns promise that returns the transaction
-function upgradeRoom(trans, roomId, newUser){
+function upgradeRoom(trans, roomId, newUser, locks){
     //The new id with the Game: prefix
     var gameId = roomId.replace('Room:', 'Game:');
     //First delete the room from the available rooms
@@ -67,20 +70,27 @@ function upgradeRoom(trans, roomId, newUser){
     //Then rename the room and add it to game rooms
     .rename(roomId, gameId).sadd('gameRooms', gameId).publish('Games/add', gameId);
     //Send start game notifications to everyone in the room and change their room mappings  
-    return broadcast(trans, roomId, 
-        (trans, userId) => trans.publish('StartGame/' + userId, '').hset(userId, 'room', gameId),
-        newUser);
+    return broadcast(trans, roomId, function(trans, userId) {
+        trans.publish('StartGame/' + userId, '').hset(userId, 'room', gameId);
+        //All users in the room other than the newest one need to be locked, as they are being modified
+        if (userId != newUser) {
+            var lk = Lock(userId);
+            locks.push(lk);
+            return lk.lock();
+        }
+        return Promise.resolve();
+    }, newUser);
     //TODO add logic for creating game object
 }
 
 //Let user join an available room
-function joinRoom(roomId, userId) {
+function joinRoom(room, userId) {
+    console.log(userId, 'startjoin')
     //Prepend Room: in front of id
-    var gameId = 'Game:' + roomId;
-    roomId = 'Room:' + roomId;
+    var gameId = 'Game:' + room;
+    var roomId = 'Room:' + room;
     //These 3 resources need to be locked for the transaction
     var locks = [Lock(roomId), Lock(userId), Lock(gameId)];
-
     //Set locks
     return Lock.multiLock(locks)
     //See if user has already been registered. If so, stop immediately to prevent same user getting added twice
@@ -112,12 +122,12 @@ function joinRoom(roomId, userId) {
             }
             //If room has 1 member, add new user and upgrade the room to a game room
             else{
-                return upgradeRoom(trans, roomId, userId)
-                .then( (trans)=> trans.execAsync() );
+                return upgradeRoom(trans, roomId, userId, locks)
+                .then( (trans)=> trans.execAsync());
             }
         }
     })
-    .finally(transUnlock(locks)).catch(transRetry(joinRoom, roomId, userId));
+    .finally(transUnlock(locks)).catch(transRetry(joinRoom, room, userId)).then(()=>console.log(userId, 'endjoin'))
 }
 
 //Append actions for deleting a room to a transaction
@@ -126,24 +136,33 @@ function deleteRoom(trans, id) {
 }
 
 //Append action for deleting a game after a user disconnects. Returns promise
-function disconnectGame(trans, roomId) {
+function disconnectGame(trans, roomId, locks, delUser) {
     //Delete the game room and send corresponding notification
     trans.del(roomId).srem('gameRooms', roomId).publish('Games/delete', roomId);
     //Send a disconnected notification to all remaining users and disconnect them
-    return broadcast(trans, roomId, 
-        (trans, userId)=>trans.publish('EndGame/disconnect/'+userId, '').del(userId));
+    return broadcast(trans, roomId, function(trans, userId){
+        trans.publish('EndGame/disconnect/'+userId, '').del(userId)
+        if (userId !== delUser) {
+            var lk = Lock(userId);
+            locks.push(lk);
+            return lk.lock();
+        }
+        return Promise.resolve();
+    });
     //TODO clean up game object
 }
 
 //Let a user leave his current room
 function leaveRoom(userId) {
+    console.log(userId, 'startleave')
     var locks = [Lock(userId)];
     //First lock user
-    return locks[0].lock()
+    return Lock.multiLock(locks)
     //Find room the user is mapped to
     .then(()=>pub.multi().hget(userId, 'room').execAsync())
     .then(function (batch) {
-        var roomId = batch[0] || ' ';
+        var roomId = batch[0];
+        if (!roomId) return;
         //The user will be deleted from redis regardless of the outcome
         var trans = pub.multi().del(userId);
         //Add room lock
@@ -167,7 +186,7 @@ function leaveRoom(userId) {
         }
         //If the room is a game room, lock the room and handle the user disconnection
         else if (roomId.startsWith('Game:')){
-            return lkPromise.then(()=>disconnectGame(trans, roomId))
+            return lkPromise.then(()=>disconnectGame(trans, roomId, locks, userId))
             .then( trans=>trans.execAsync() );
         }
         //The room isnt an actual room, so just delete user
@@ -176,7 +195,7 @@ function leaveRoom(userId) {
         }
     })
     //If transaction fails from watch, try again
-    .finally(transUnlock(locks)).catch(transRetry(leaveRoom, userId));
+    .finally(transUnlock(locks)).catch(transRetry(leaveRoom, userId)).then(()=>console.log(userId, 'endleave'));
 }
 
 //Retrieve all available rooms without the Room: prefix
@@ -187,6 +206,7 @@ function getRooms(){
 
 //Have the player select a character after joining a game
 function selectChar(userId, character){
+    console.log(userId, 'selectstart');
     var room, chars, gameId;
     var locks = [Lock(userId)];
     return locks[0].lock()
@@ -200,16 +220,23 @@ function selectChar(userId, character){
             var roomLock = Lock(roomId);
             locks.push(roomLock);
             gameId = roomId;
-            return roomLock.lock().then(()=>pub.multi().smembers(roomId).execAsync());
+            return roomLock.lock()
+            .then(()=>pub.multi().smembers(roomId).execAsync());
         }
         //If user doesnt exist or is not in game room, throw error
         throw 'UnregisteredUser';
     })
     .then(function(batch){
-        room = batch[0];      
+        room = batch[0];     
         //Make a list of the characters each user has picked so far
         var promises = room.map(function(otherUser){
-            if (otherUser !== userId) return pub.hgetAsync(otherUser, 'character');
+            if (otherUser !== userId) {
+                //Lock the other users
+                var lk = Lock(otherUser);
+                locks.push(lk);
+                return Promise.resolve().then(()=>lk.lock())
+                .then(()=>pub.hgetAsync(otherUser, 'character'));
+            }
             else return Promise.resolve(character);
         });
         return Promise.all(promises)

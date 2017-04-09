@@ -9,8 +9,8 @@ function setPub(repoPub){
     return Lock;
 }
 
-//Class for building lock objects with given key and random values. Default expiry is 10s
-function Lock(key, expiry=10000) {
+//Class for building lock objects with given key and random values. Default expiry is 2s
+function Lock(key, expiry=3000) {
     var id = newid();
     return Object.assign(Object.create(Lock.prototype),
         {_id: id, _key: 'lock:'+ key, _expiry: expiry});

@@ -22,50 +22,123 @@ function ClientClass(room, events) {
     }
 }
 
-var RoomClient = ClientClass('/room', ['issue', 'startGame', 'createGame', 'disconnectWin']);
+var RoomClient = function(roomId){
+    var socket = ClientClass('/room', ['issue', 'startGame', 'disconnectWin'])
+    (()=>socket.emit('roomId', roomId));
+    return socket;
+}
 
 var LobbyClient = ClientClass('/lobby', ['issue', 'add', 'delete']);
 
-describe('/room', function () { 
-    after(function (done) {
-        repo.pub.flushdb(done);
-    });
-
-    it('should deny bad ids', function (done) {
-        var client = RoomClient();
-        client.emit('roomId', '55')
-        client.on('issue', function(msg){
-            assert.deepStrictEqual(client.notifs, ['issueInvalidRoomId']);
-            client.disconnect();
-            done();
+describe('sockets', function(){
+    describe('/room joining and leaving', function () { 
+        afterEach(function (done) {
+            repo.pub.flushdb(done);
         });
-    });
 
-    it.only('should start game when 2 players are in the room', function (done) {
-        this.timeout(2000);
-        var id = sid();
-        var c2 = RoomClient();
-        c2.emit('roomId', id)
-        var c3 = RoomClient();
-        c3.emit('roomId', id)
-        c2.on('startGame', function(){
-            done();
-        })
-        setTimeout(function () {
-            //assert.deepStrictEqual(c2.notifs, ['startGame']);
-            //assert.deepStrictEqual(c3.notifs, ['startGame']);
-        }, 2000);
+        it('should deny bad ids', function (done) {
+            var client = RoomClient('55');
+            client.on('issue', function(msg){
+                assert.deepStrictEqual(client.notifs, ['issueInvalidRoomId']);
+                client.disconnect();
+                done();
+            });
+        });
+
+        it('should start game when 2 players are in the room', function (done) {
+            var id = sid();
+            var c1 = RoomClient(id);
+            c1.on('connect', function(){
+                c1.disconnect();
+                setTimeout(function(){
+                    var c2 = RoomClient(id);
+                    var c3 = RoomClient(id);
+                    c3.on('startGame', function(){
+                        assert.deepStrictEqual(c3.notifs, ['startGame']);
+                        assert.deepStrictEqual(c1.notifs, []);
+                        done();
+                    })
+                }, 100);                
+            })            
+        });
         
-    });
-    
-    it('should deny game when a game room exists with same id', function (done) {
-        var id = sid();
-        var c1 = RoomClient();
-        var c2 = RoomClient();
-        var c3 = RoomClient();
-        setTimeout(function () {
-            assert.deepStrictEqual(c3.notifs, ['issueGameExists']);
-            done();
-        }, 200);  
+        it('should deny game when a game room exists with same id', function (done) {
+            var id = sid();
+            var c1 = RoomClient(id);
+            var c2 = RoomClient(id);
+            c2.on('startGame', function(){
+                var c3 = RoomClient(id);
+                c3.on('issue', function(issue){
+                        c3.on('disconnect', ()=>setTimeout(done,50));
+                        assert.strictEqual(issue, 'GameExists');
+                        c1.disconnect();
+                        c2.disconnect();
+                        c3.disconnect();
+                }); 
+            }); 
+        });
+
+        it('should deny same user joining twice', function(done){
+            var c = RoomClient(sid());
+            c.emit('roomId', sid());
+            c.on('issue', function(issue){
+                assert.strictEqual(issue, 'UserExists');
+                c.disconnect();
+                done()
+            })
+        })
     })
-})
+
+    describe('/room selectChar and leaving games', function(){
+        var socket1, socket2;
+
+        afterEach(function (done) {
+            repo.pub.flushdb(done);
+        });
+
+        beforeEach(function(done){
+            var id = sid()
+            socket1 = RoomClient(id);
+            socket2 = RoomClient(id);
+            socket2.on('connect', function(){
+                done();
+            })
+        });
+
+        it('should deny invalid character names', function(done){
+            socket1.emit('selectChar', 'invalid');
+            socket1.on('issue', function(err){
+                assert.strictEqual(err, 'InvalidCharacter');
+                done();
+            })
+        });
+
+        it('should deny users that are not in a game', function(done){
+            var c = RoomClient(sid());
+            c.emit('selectChar', 'Slasher');
+            c.on('issue', function(err){
+                assert.strictEqual(err, 'UnregisteredUser');
+                done();
+            })
+        });
+
+        it('should delete the entire game once a user leaves', function(done){
+            socket1.on('disconnectWin', done);
+            socket2.disconnect();
+        });
+
+        it('should create game when both characters are selected', function(done){
+            socket1.emit('selectChar', 'Blaster');
+            socket2.emit('selectChar', 'Slasher');
+            socket2.on('createGame', done);
+            socket1.on('createGame', done)
+        });
+
+        it('should not race between selectChar and leaveRoom', function(done){
+            socket1.emit('selectChar', 'Blaster');
+            socket2.emit('selectChar', 'Slasher');
+            socket1.on('disconnectWin', done);
+            socket2.disconnect();
+        })
+    });
+});
