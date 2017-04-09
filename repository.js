@@ -40,7 +40,7 @@ function transRetry(func, ...args){
     return function (err) {
         //If locking error is caught, log it and apply the input args to the function to try again after some delay
         if (err === 'LockFailed') {
-            return delay(Math.random()*20)
+            return delay(Math.random()*50.0)
             .then(function(){
                console.log(func.name, 'transaction retry');
                 return func.apply(undefined, args); 
@@ -85,7 +85,7 @@ function upgradeRoom(trans, roomId, newUser, locks){
 
 //Let user join an available room
 function joinRoom(room, userId) {
-    console.log(userId, 'startjoin')
+    //console.log(userId, 'startjoin')
     //Prepend Room: in front of id
     var gameId = 'Game:' + room;
     var roomId = 'Room:' + room;
@@ -127,7 +127,7 @@ function joinRoom(room, userId) {
             }
         }
     })
-    .finally(transUnlock(locks)).catch(transRetry(joinRoom, room, userId)).then(()=>console.log(userId, 'endjoin'))
+    .finally(transUnlock(locks)).catch(transRetry(joinRoom, room, userId))//.then(()=>console.log(userId, 'endjoin'))
 }
 
 //Append actions for deleting a room to a transaction
@@ -154,7 +154,7 @@ function disconnectGame(trans, roomId, locks, delUser) {
 
 //Let a user leave his current room
 function leaveRoom(userId) {
-    console.log(userId, 'startleave')
+    //console.log(userId, 'startleave')
     var locks = [Lock(userId)];
     //First lock user
     return Lock.multiLock(locks)
@@ -195,7 +195,7 @@ function leaveRoom(userId) {
         }
     })
     //If transaction fails from watch, try again
-    .finally(transUnlock(locks)).catch(transRetry(leaveRoom, userId)).then(()=>console.log(userId, 'endleave'));
+    .finally(transUnlock(locks)).catch(transRetry(leaveRoom, userId))//.then(()=>console.log(userId, 'endleave'));
 }
 
 //Retrieve all available rooms without the Room: prefix
@@ -206,7 +206,7 @@ function getRooms(){
 
 //Have the player select a character after joining a game
 function selectChar(userId, character){
-    console.log(userId, 'selectstart');
+    //console.log(userId, 'selectstart');
     var room, chars, gameId;
     var locks = [Lock(userId)];
     return locks[0].lock()
@@ -262,11 +262,11 @@ function selectChar(userId, character){
 }
 
 //Publish an input notification to the user's game. Message is user's id and the contents of notification
-function notifyGame(userId, message) {
+function notifyGame(userId, input, inputType) {
     return pub.hgetAsync(userId, 'room')
     .then(function (gameId) {
         if (gameId){
-            return pub.multi().publish(`Input/${gameId}`, `${userId}:${message}`).execAsync();
+            return pub.multi().publish(`Input/${gameId}`, `${userId}:${inputType}:${input}`).execAsync();
         }
         return Promise.resolve();
     });

@@ -54,11 +54,11 @@ describe('sockets', function(){
                     var c2 = RoomClient(id);
                     var c3 = RoomClient(id);
                     c3.on('startGame', function(){
+                        assert.deepStrictEqual(c2.notifs, ['startGame']);
                         assert.deepStrictEqual(c3.notifs, ['startGame']);
-                        assert.deepStrictEqual(c1.notifs, []);
                         done();
                     })
-                }, 100);                
+                }, 120);                
             })            
         });
         
@@ -86,6 +86,17 @@ describe('sockets', function(){
                 c.disconnect();
                 done()
             })
+        });
+
+        it('should deny requests on full rooms', function(done){
+            var finish = message=>{console.log(message); done()};
+            var id = sid();
+            var c1 = RoomClient(id);
+            var c2 = RoomClient(id);
+            var c3 = RoomClient(id);
+            c1.on('issue', finish); 
+            c2.on('issue', finish); 
+            c3.on('issue', finish); 
         })
     })
 
@@ -135,10 +146,13 @@ describe('sockets', function(){
         });
 
         it('should not race between selectChar and leaveRoom', function(done){
+            socket2.on('disconnectWin', ()=>setTimeout(function(){
+                assert(!socket2.notifs.includes('createGame'))
+                done();
+            }, 100));
             socket1.emit('selectChar', 'Blaster');
+            socket1.disconnect();
             socket2.emit('selectChar', 'Slasher');
-            socket1.on('disconnectWin', done);
-            socket2.disconnect();
         })
     });
 });

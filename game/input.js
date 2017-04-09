@@ -3,7 +3,8 @@ var repo = require('../repository.js');
 //Prototype for object that tracks the user input for one type of input
 var Record = {
     //Initialize the input as unpressed
-    init(bufferTime, userId){
+    init(bufferTime, userId, inputType){
+        this.inputType = inputType;
         this.lastPress = Date.now();
         this.input = '';
         this.bufferTime = bufferTime;
@@ -12,13 +13,13 @@ var Record = {
         return this;
     },
 
-    //Every time the input is entered, update the last time the input was pressed
+    //Every time the input is entered, send notif if it's different than what's there before
     set(inputCode) {
         this.lastPress = Date.now();
         //If the input is different than the current input, send notif to redis
         if (this.input !== inputCode) {
             this.input = inputCode;
-            repo.notifyGame(this.userId, inputCode);
+            repo.notifyGame(this.userId, inputCode, this.inputType);
         }
         this._timedReset();
     },
@@ -30,7 +31,7 @@ var Record = {
             if (Date.now() - self.lastPress >= self.bufferTime) {
                 self.input = '';
                 //Send redis notif for flushed input
-                repo.notifyGame(self.userId, self.input);
+                repo.notifyGame(self.userId, self.input, this.inputType);
             }
         }, self.bufferTime+1);
     }
@@ -63,9 +64,9 @@ function process(inputCode) {
 module.exports.create = function (socketId) {
     return {
         //Inputs are held for 45 ms because that's how often the browsers sends held down inputs
-        _vertRecord: Object.create(Record).init(45, socketId),
-        _horiRecord: Object.create(Record).init(45, socketId),
-        _skillRecord: Object.create(Record).init(45, socketId),
+        _vertRecord: Object.create(Record).init(45, socketId, 'v'),
+        _horiRecord: Object.create(Record).init(45, socketId, 'h'),
+        _skillRecord: Object.create(Record).init(45, socketId, 's'),
         process: process
     }
 };

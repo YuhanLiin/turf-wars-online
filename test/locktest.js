@@ -84,17 +84,5 @@ describe('lock', function(){
             .then(()=>Lock.multiUnlock(lks))
             .then(()=>Lock.multiLock(lks));
         });
-
-        it('should release previous locks when multilock fails', function(){
-            var lks = lox();
-            //Lock c
-            return Lock('c').lock()
-            //Try to multilock a and b, which get locked. Fail at c
-            .then(()=>Lock.multiLock(lks))
-            //a and b should be released after failure
-            .then(fail, checkErr)
-            //Lock a and b
-            .then(()=>Lock.multiLock([Lock('a'), Lock('b')]));
-        })
     });
 });

@@ -41,12 +41,6 @@ function init(http){
                 socket.emit('disconnectWin', message);
                 //TODO add logic for cleaning up the game
             }
-            else if(ownedGame){
-                if (channel.startsWith('Input/'+ownedGame)){
-                    var userAndInput = message.split(':');
-                    //TODO put this into game obj
-                }
-            }
         }
         repo.sub.on("pmessage", pubsubHandler);
         
