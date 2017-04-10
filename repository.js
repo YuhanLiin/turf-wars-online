@@ -262,13 +262,12 @@ function selectChar(userId, character){
 }
 
 //Publish an input notification to the user's game. Message is user's id and the contents of notification
-function notifyGame(userId, input, inputType) {
+function sendInput(userId, input) {
     return pub.hgetAsync(userId, 'room')
     .then(function (gameId) {
         if (gameId){
-            return pub.multi().publish(`Input/${gameId}`, `${userId}:${inputType}:${input}`).execAsync();
+            return pub.multi().publish(`Input/${gameId}`, `${userId}:${input}`).execAsync();
         }
-        return Promise.resolve();
     });
 }
 

@@ -234,22 +234,22 @@ describe('repo', function(){
         });
     });
 
-    describe('notifyGame()', function(){
+    describe('sendInput()', function(){
         after(function(){ 
             notifs = [];
             return repo.pub.flushdbAsync();
         });
 
         it('should ignore nonexistent users', function(){
-            return repo.notifyGame('user', 'message')
+            return repo.sendInput('user', 'b1')
             .then(()=>assert.deepStrictEqual([], notifs));
         });
 
         it('should send correct notification', function(){
             return repo.joinRoom('room1', 'user1')
             .then(()=>repo.joinRoom('room1', 'user2'))
-            .then(()=>repo.notifyGame('user1', 'message'))
-            .then(()=>assert(notifs.includes('Input/Game:room1'+'user1:message')));
+            .then(()=>repo.sendInput('user1', 'c3'))
+            .then(()=>assert(notifs.includes('Input/Game:room1'+'user1:c3')));
         });
     });
 });
