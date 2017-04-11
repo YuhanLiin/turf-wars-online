@@ -278,4 +278,4 @@ module.exports.joinRoom = joinRoom;
 module.exports.leaveRoom = leaveRoom;
 module.exports.getRooms = getRooms;
 module.exports.selectChar = selectChar;
-module.exports.notifyGame = notifyGame;
+module.exports.sendInput = sendInput;

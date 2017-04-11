@@ -1,19 +1,24 @@
+//Used server and client side
+
 //Creates new input record
-function InputRecord(){
+function InputRecord (){
     var obj = Object.create(InputRecord.prototype);
     obj.vert = 0;
     obj.hori = 0;
     obj.skill = 0;
+    return obj;
 }
 
 //Prototype for object that tracks the user inputs
 InputRecord.prototype = {
-    //Every time the input is entered, send notif. Cap it at once every 20 ms
+    //Sets keycode for specific input type
     set(key, onoff, inputType) {
         var curKey = this[inputType];
+        //If input is on, set it on
         if (onoff === 1) {
             this[inputType] = key;
         }
+        //If input is turned off, turn it off the the input key matches the currently stored key
         else if (onoff === 0) {
             if (key === curKey) {
                 this[inputType] = 0;
@@ -25,21 +30,23 @@ InputRecord.prototype = {
     process(inputCode) {
         var onoff = parseInt(inputCode[1]);
         switch (inputCode[0]) {
-            //Up and down are vertical inputs
+            //Up is -1 y axis
             case 'u':
                 this.set(-1, onoff, 'vert');
                 break;
+            //Down is +1 y axis
             case 'd':
                 this.set(1, onoff, 'vert');
                 break;
-                //Left and right are horizontal inputs
+            //Left is -1 x axis
             case 'l':
                 this.set(-1, onoff, 'hori');
                 break;
+            //Right is +1 x axis
             case 'r':
                 this.set(1, onoff, 'hori');
                 break;
-                //Numbers represent skill activation inputs
+            //Numbers represent skill activation inputs
             case '1':
             case '2':
             case '3':
@@ -49,3 +56,5 @@ InputRecord.prototype = {
         }
     }
 };
+
+module.exports = InputRecord;
