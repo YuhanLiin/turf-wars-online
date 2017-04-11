@@ -29,7 +29,7 @@ describe('lock', function(){
         it('should expire and release lock', function(done){
             Lock('test', 1000).lock()
             .then(function(){
-                setTimeout(()=>Lock('test').lock().then(()=>done()), 1000);
+                setTimeout(()=>Lock('test').lock().then(()=>done()), 1005);
             });
         });
 

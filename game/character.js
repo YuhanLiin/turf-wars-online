@@ -13,10 +13,11 @@ function Character(game, px, py, dx, dy) {
     char.facey = dy;
     char._limitx = game.width - char.radius;
     char._limity = game.height - char.radius;
+    char.frameSpeed = char.baseSpeed;
     return char;
 }
 Character.prototype = {
-    frameSpeed: 6, radius: 20,
+    baseSpeed: 6, radius: 20,
     move (){
         if (!this.isMoving) return;
         var dist = this.frameSpeed;

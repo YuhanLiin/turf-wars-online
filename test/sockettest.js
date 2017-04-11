@@ -47,19 +47,13 @@ describe('sockets', function(){
 
         it('should start game when 2 players are in the room', function (done) {
             var id = sid();
-            var c1 = RoomClient(id);
-            c1.on('connect', function(){
-                c1.disconnect();
-                setTimeout(function(){
-                    var c2 = RoomClient(id);
-                    var c3 = RoomClient(id);
-                    c3.on('startGame', function(){
-                        assert.deepStrictEqual(c2.notifs, ['startGame']);
-                        assert.deepStrictEqual(c3.notifs, ['startGame']);
-                        done();
-                    })
-                }, 120);                
-            })            
+            var c2 = RoomClient(id);
+            var c3 = RoomClient(id);
+            c3.on('startGame', function(){
+                assert.deepStrictEqual(c2.notifs, ['startGame']);
+                assert.deepStrictEqual(c3.notifs, ['startGame']);
+                done();
+            })           
         });
         
         it('should deny game when a game room exists with same id', function (done) {
@@ -111,7 +105,7 @@ describe('sockets', function(){
             var id = sid()
             socket1 = RoomClient(id);
             socket2 = RoomClient(id);
-            socket2.on('connect', function(){
+            socket2.on('startGame', function(){
                 done();
             })
         });
