@@ -1,6 +1,5 @@
 function Character(game, px, py, dx, dy){
     var char = Object.create(Character.prototype);
-    char.game = game;
     char.isMoving = false;
     char.canAct = true;
     char.canTurn = true;
@@ -17,7 +16,7 @@ function Character(game, px, py, dx, dy){
 Character.prototype = {
     frameSpeed: 6, radius: 20,
     move (){
-        if (!isMoving) return;
+        if (!this.isMoving) return;
         var dist = this.frameSpeed;
         this.posx += dist*this.facex;
         this.posy += dist*this.facey;
@@ -27,4 +26,6 @@ Character.prototype = {
         if (this.posx > this._limitx) this.posx = this._limitx;
         if (this.posy > this._limity) this.posy = this._limity;
     }
-}
+};
+
+module.exports = Character;
