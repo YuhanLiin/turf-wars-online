@@ -6,6 +6,7 @@ function Skill(character){
     skill.curCooldown = 0;
     //Skill references its user to change properties
     skill.character = character;
+    return skill;
 }
 
 //Creates subclass factory, since the instance variables are same for all subclasses
@@ -19,7 +20,8 @@ Skill.generateSub = function(){
 Skill.prototype = {
     //Uses a skill if its cooldown has passed. Returns whether skill was actually used
     use(){
-        if (this.curCooldown === 0 && this.character.canAct){
+        if (this.curCooldown === 0 && this.character.canAct) {
+            this.character.canAct = false;
             //Active skills start on frame 1
             this.curFrame = 1;
             this.curCooldown = this.cooldown;
@@ -31,11 +33,10 @@ Skill.prototype = {
     },
 
     activeProcess(){
-        this.character.canAct = false;
         //Custom skill code
-        this._activeProcess(character);
-        //When skill is done, character can act and skill becomes inactive
-        if (this.curFrame > this.endFrame){
+        this._activeProcess();
+        //When skill is on last frame, character can act and skill becomes inactive
+        if (this.curFrame >= this.endFrame){
             this.curFrame = 0;
             this.character.canAct = true;
             return;
@@ -47,7 +48,7 @@ Skill.prototype = {
     frameProcess(){
         //If skill is active, active process
         if (this.curFrame > 0){
-            this.activeProcess(this.character);
+            this.activeProcess();
         }
         //Lower cooldown every frame
         if (this.curCooldown > 0){
