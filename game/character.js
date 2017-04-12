@@ -2,22 +2,29 @@ var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
     var char = Object.create(Character.prototype);
+    char.posx = px;
+    char.posy = py;
+    char.facex;
+    char.facey;
+    //Turn the player to initial direction but disable movement
+    char.turn(dx, dy);
     char.isMoving = false;
     char.canAct = true;
     char.canTurn = true;
     char.isAlive = true;
     char.isInvincible = false;
-    char.posx = px;
-    char.posy = py;
-    char.facex = dx;
-    char.facey = dy;
+    //Precomputed boundaries
     char._limitx = game.width - char.radius;
     char._limity = game.height - char.radius;
+    //Base speed will be overriden
+    char.baseSpeed = 6;
     char.frameSpeed = char.baseSpeed;
     return char;
 }
+//Excluded skills, a 4 element Skill array
+
 Character.prototype = {
-    baseSpeed: 6, radius: 20,
+    radius: 20,
     move (){
         if (!this.isMoving) return;
         var dist = this.frameSpeed;
@@ -30,7 +37,9 @@ Character.prototype = {
         if (this.posy > this._limity) this.posy = this._limity;
     },
 
+    //Determines player's facing values based on directional input.
     turn (dirx, diry) {
+        if (!this.canTurn) return;
         //No movement input means character stops moving but faces same direction
         if (!dirx && !diry) this.isMoving = false;
             //Diagonal facing means both x and y are set but factors are scaled down according to Pythagoreas
@@ -45,6 +54,20 @@ Character.prototype = {
             this.facex = dirx;
             this.facey = diry;
         }
+    },
+
+    //Takes user input and runs all of character's processing for one frame. Returns whether a skill was used or not
+    frameProcess(dirx, diry, skillNum){
+        //Determine facing, process skills, then move (allows dashes on frame 1)
+        var skillUsed = false;
+        this.turn (dirx, diry);
+        if (skillNum) skillUsed = this.skills[skillNum].use();
+        //Propagates frame process
+        for (let i=0; i<this.skills.length; i++){
+            this.skills[i].frameProcess();
+        }
+        this.move();
+        return skillUsed;
     }
 };
 

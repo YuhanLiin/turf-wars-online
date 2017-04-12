@@ -72,10 +72,9 @@ Game.inject = function (nextTick, sendUpdate) {
             for (let player in this.players) {
                 let char = this.players[player].character;
                 let input = this.players[player].input;
-                let dirx = input.vert, diry = input.hori, skillNum = input.skill;
+                let dirx = input.hori, diry = input.vert, skillNum = input.skill;
 
-                char.turn(dirx, diry);
-                char.move();
+                char.frameProcess(dirx, diry, skillNum)
             }
             //For now, end game after 150 frames
             if (this.frameCount >= 150) this.isDone = true;
