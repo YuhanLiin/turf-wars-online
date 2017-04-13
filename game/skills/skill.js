@@ -39,6 +39,7 @@ Skill.prototype = {
         if (this.curFrame >= this.endFrame){
             this.curFrame = 0;
             this.character.canAct = true;
+            this._end();
             return;
         }
         this.curFrame++;
@@ -56,6 +57,6 @@ Skill.prototype = {
         }
     }
 };
-//Excluded cooldown, endFrame, _use, _activeProcess
+//Excluded cooldown, endFrame, _use, _activeProcess, _end()
 
 module.exports = Skill;

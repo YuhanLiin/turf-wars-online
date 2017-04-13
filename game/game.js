@@ -3,9 +3,6 @@
 //Responsible for input, output, and game loop; gameJson maps playerId to character name, inputJson maps playerId to input manager. 
 function Game(gameJson, inputJson){
     var game = Object.create(Game.prototype);
-    //Size of game field
-    game.height = 700;
-    game.width = 800;
     game.isDone = false;
     game.frameCount = 0;
     game.id = gameJson.gameId;
@@ -34,10 +31,15 @@ Game.maxFrameSkips = 10;
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
-Game.inject = function (nextTick, sendUpdate) {
+Game.inject = function (nextTick, sendUpdate, hitCheck) {
     Game.prototype = {
         nextTick: nextTick,
         sendUpdate: sendUpdate,
+        hitCheck:hitCheck,
+
+        //Size of game field
+        height: 700;
+        width: 800;
 
         //Starts the game loop. Run once per game
         start() {

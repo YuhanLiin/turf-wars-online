@@ -61,7 +61,7 @@ Character.prototype = {
         //Determine facing, process skills, then move (allows dashes on frame 1)
         var skillUsed = false;
         this.turn (dirx, diry);
-        if (skillNum) skillUsed = this.skills[skillNum].use();
+        if (skillNum) skillUsed = this.skills[skillNum-1].use();
         //Propagates frame process
         for (let i=0; i<this.skills.length; i++){
             this.skills[i].frameProcess();
