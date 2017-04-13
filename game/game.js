@@ -38,8 +38,8 @@ Game.inject = function (nextTick, sendUpdate, hitCheck) {
         hitCheck:hitCheck,
 
         //Size of game field
-        height: 700;
-        width: 800;
+        height: 700,
+        width: 800,
 
         //Starts the game loop. Run once per game
         start() {

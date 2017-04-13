@@ -39,20 +39,21 @@ Character.prototype = {
 
     //Determines player's facing values based on directional input.
     turn (dirx, diry) {
-        if (!this.canTurn) return;
         //No movement input means character stops moving but faces same direction
         if (!dirx && !diry) this.isMoving = false;
-            //Diagonal facing means both x and y are set but factors are scaled down according to Pythagoreas
-        else if (dirx && diry) {
-            this.isMoving = true;
-            this.facex = dirx * oneroot2;
-            this.facey = diry * oneroot2;
-        }
-            //Non diagonal means x and y are 1 and 0
         else {
             this.isMoving = true;
-            this.facex = dirx;
-            this.facey = diry;
+            //Character cant turn but can still move
+            if (!this.canTurn) return;
+            //Diagonal facing means both x and y are set but factors are scaled down according to Pythagoreas
+            if (dirx && diry) {               
+                this.facex = dirx * oneroot2;
+                this.facey = diry * oneroot2;
+            }
+            else {
+                this.facex = dirx;
+                this.facey = diry;
+            }
         }
     },
 

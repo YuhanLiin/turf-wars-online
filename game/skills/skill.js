@@ -25,8 +25,6 @@ Skill.prototype = {
             //Active skills start on frame 1
             this.curFrame = 1;
             this.curCooldown = this.cooldown;
-            //Custom activation code
-            this._use();
             return true;
         }
         return false;
@@ -39,7 +37,6 @@ Skill.prototype = {
         if (this.curFrame >= this.endFrame){
             this.curFrame = 0;
             this.character.canAct = true;
-            this._end();
             return;
         }
         this.curFrame++;
@@ -57,6 +54,6 @@ Skill.prototype = {
         }
     }
 };
-//Excluded cooldown, endFrame, _use, _activeProcess, _end()
+//Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
