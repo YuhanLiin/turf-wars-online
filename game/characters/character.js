@@ -16,15 +16,23 @@ function Character(game, px, py, dx, dy) {
     //Precomputed boundaries
     char._limitx = game.width - char.radius;
     char._limity = game.height - char.radius;
-    //Base speed will be overriden
-    char.baseSpeed = 6;
-    char.frameSpeed = char.baseSpeed;
     return char;
 }
-//Excluded skills, a 4 element Skill array
+//Excluded baseSpeed, frameSpeed, and skills, a 4 element Skill array
 
+//All characters will share this prototype
 Character.prototype = {
     radius: 20,
+    //Used to initialize speed
+    setSpeed(speed){
+        this.baseSpeed = speed;
+        this.frameSpeed = speed;
+    },
+
+    setSkills(game, ...factories){
+        this.skills = factories.map(factory=>factory(this, game.attackList, game.projectileList))
+    }
+
     move (){
         if (!this.isMoving) return;
         var dist = this.frameSpeed;

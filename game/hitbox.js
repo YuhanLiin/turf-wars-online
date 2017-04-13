@@ -1,7 +1,8 @@
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 
 //Default onhit behaviour kills other player
-function kill(otherBox){
+function kill(otherBox) {
+    if (!otherBox.isInvincible)
         otherBox.isAlive = false;
 }
 
@@ -15,7 +16,7 @@ function Attack(radius) {
 }
 
 Attack.prototype = {
-    onHit: kill;
+    onHit: kill,
     activate() {
         this.curFrame = 1;
     },
@@ -47,7 +48,7 @@ function Projectile(radius, px, py, vx, vy){
 
 
 Projectile.prototype = {
-    onHit: kill;
+    onHit: kill,
     move(){
         this.posx += this.velx;
         this.posy += this.vely;

@@ -7,24 +7,19 @@ function Dash(character) {
 
 Dash.prototype = Object.assign(Object.create(Skill.prototype), {
     cooldown: 60, endFrame: 5,
-    _use() {
-        this.character.canTurn = false;
-    },
-
     _activeProcess() {
         switch (this.curFrame) {
             case 1:
-                this.character.canTurn = true;
+                this.character.canTurn = false;
                 break;
             case 2:
             case 3:
             case 4:
-            case 5:
                 this.character.frameSpeed = this.character.baseSpeed * 4;
                 this.character.canMove = true;
                 break;
-            case 6:
-                this.character.canTurn = false;
+            case 5:
+                this.character.canTurn = true;
                 this.character.frameSpeed = this.character.baseSpeed;
                 break;
         }
