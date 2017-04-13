@@ -29,10 +29,6 @@ Character.prototype = {
         this.frameSpeed = speed;
     },
 
-    setSkills(game, ...factories){
-        this.skills = factories.map(factory=>factory(this, game.attackList, game.projectileList))
-    }
-
     move (){
         if (!this.isMoving) return;
         var dist = this.frameSpeed;

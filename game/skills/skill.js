@@ -18,6 +18,10 @@ Skill.generateSub = function(){
 }
 
 Skill.prototype = {
+    //Interface for having setting the lists that attack skills output hitboxes into. Must be called at beginning
+    registerHitboxLists(attackList, projectileList){
+    },
+
     //Uses a skill if its cooldown has passed. Returns whether skill was actually used
     use(){
         if (this.curCooldown === 0 && this.character.canAct) {

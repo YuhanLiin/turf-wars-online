@@ -1,19 +1,22 @@
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
-function Cut(character, attackList, projectileList){
+function Cut(character){
     var skill = Object.assign(Object.create(Cut.prototype), Skill(character));
-    var attackRadius = 20;
-    skill.attack = Attack(attackRadius);
-    attackList.push(skill.attack);
-    //Distance between center of attack hitbox and center of character
-    skill.centerDist = character.radius + attackRadius;
     return skill;
 }
 
 Cut.prototype = Object.assign(Object.create(Skill.prototype),
 {
-    cooldown: 15, endFrame:10,  
+    cooldown: 15, endFrame: 10,
+    registerHitboxLists(attackList, projectileList) {
+        var attackRadius = 20;
+        skill.attack = Attack(attackRadius);
+        attackList.push(skill.attack);
+        //Distance between center of attack hitbox and center of character
+        skill.centerDist = character.radius + attackRadius;
+    },
+
     _activeProcess(){
         switch (this.curFrame) {
             case 1:

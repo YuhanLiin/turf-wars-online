@@ -14,10 +14,13 @@ function Game(gameJson, inputJson){
         //Populates players object
         if (prop !== 'gameId') {
             let args = startPositions.pop();
-            game.players[prop] = {};
+            var playerObj = game.players[prop] = {};
             //Constructs character models and their positions on the map
-            game.players[prop].character = Game.roster[gameJson[prop]](game, args.px, args.py, args.dx, args.dy);
-            game.players[prop].input = inputJson[prop];
+            playerObj.attacks = [];
+            playerObj.projectiles = [];
+            playerObj.character = Game.roster[gameJson[prop]](game, args.px, args.py, args.dx, args.dy);
+            playerObj.input = inputJson[prop];
+            playerObj.character.skills.map(skill=>skill.registerHitboxLists(playerObj.attacks, playerObj.projectiles));
         }
     }
     return game;
