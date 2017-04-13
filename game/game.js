@@ -34,11 +34,10 @@ Game.maxFrameSkips = 10;
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
-Game.inject = function (nextTick, sendUpdate, hitCheck) {
+Game.inject = function (nextTick, sendUpdate) {
     Game.prototype = {
         nextTick: nextTick,
         sendUpdate: sendUpdate,
-        hitCheck:hitCheck,
 
         //Size of game field
         height: 700,

@@ -1,10 +1,21 @@
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
+var hitboxMixin = {
+    checkHit (box1, box2) {
+        var deltax = box1.posx - box2.posx;
+        var deltay = box1.posy - box2.posy;
+        var dist = Math.sqrt(deltax * deltax + deltay * deltay);
+        if (dist < box1.radius + box2.radius) {
+            box1.onHit(box2);
+        }
+    },
+    onHit(otherBox) {
+        if (!otherBox.isInvincible)
+            otherBox.isAlive = false;
+    }
+}
 
 //Default onhit behaviour kills other player
-function kill(otherBox) {
-    if (!otherBox.isInvincible)
-        otherBox.isAlive = false;
-}
+
 
 //Attacks are hitboxes managed by their respective skills. Set instances per skill
 function Attack(radius) {
@@ -15,8 +26,7 @@ function Attack(radius) {
     return box;
 }
 
-Attack.prototype = {
-    onHit: kill,
+Attack.prototype = Object.assign({
     activate() {
         this.curFrame = 1;
     },
@@ -33,7 +43,7 @@ Attack.prototype = {
             this.curFrame++;
         }
     }
-};
+}, hitboxMixin);
 
 //Attacks managed by the game state; moves automatically and is not saved
 function Projectile(radius, px, py, vx, vy){
@@ -47,14 +57,13 @@ function Projectile(radius, px, py, vx, vy){
 }
 
 
-Projectile.prototype = {
-    onHit: kill,
+Projectile.prototype = Object.assign({
     move(){
         this.posx += this.velx;
         this.posy += this.vely;
         curFrame++;
     }
-};
+}, hitboxMixin);
 
 
 module.exports.Attack = Attack;
