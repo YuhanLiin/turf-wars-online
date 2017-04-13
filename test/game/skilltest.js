@@ -1,4 +1,4 @@
-var Skill = require('../game/skills/skill.js');
+var Skill = require('../../game/skills/skill.js');
 var assert = require('assert');
 
 describe('Base Skill', function () {

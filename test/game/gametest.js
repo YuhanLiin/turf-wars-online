@@ -1,5 +1,5 @@
-var Game = require('../game/game.js');
-var Character = require('../game/character.js');
+var Game = require('../../game/game.js');
+var Character = require('../../game/characters/character.js');
 var assert = require('assert');
 
 var oframeTime = Game.frameTime, oroster = Game.roster, omaxFrameSkips = Game.maxFrameSkips;

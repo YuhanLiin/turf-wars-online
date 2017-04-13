@@ -1,4 +1,4 @@
-var input = require('../game/input.js')();
+var input = require('../../game/input.js')();
 var assert = require('assert');
 
 describe('InputRecord', function(){

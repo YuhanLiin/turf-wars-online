@@ -1,5 +1,5 @@
 var gamemock = {width: 800, height:700};
-var Character = require('../game/character.js');
+var Character = require('../../game/characters/character.js');
 var assert = require('assert');
 
 describe('Base Character', function(){

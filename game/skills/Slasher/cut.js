@@ -22,17 +22,17 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
             case 1:
                 this.character.canTurn = false;
                 break;
-            case 2:
-                this.attack.activate();               
-            case 3:
-            case 4:
-                var px = this.character.posx + this.character.facex * this.centerDist;
-                var py = this.character.posy + this.character.facey * this.centerDist;
-                this.attack.reposition(px, py);
-                break;
             case 5:
                 this.attack.deactivate();
                 this.character.canTurn = true;
+                break;
+            case 2:
+                var px = this.character.posx + this.character.facex * this.centerDist;
+                var py = this.character.posy + this.character.facey * this.centerDist;
+                this.attack.activate();
+            case 3:
+            case 4:
+                this.attack.reposition(px, py);
                 break;
         }
     },
