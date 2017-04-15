@@ -13,15 +13,21 @@ function generateHitTest(type) {
         box.checkHit(target1);
         box.checkHit(target2);
         assert(target1.isAlive && target2.isAlive, "False positive");
+
         target1 = { posx: 60, posy: 20, radius: 21, isAlive: true };
         target2 = { posx: 40, posy: 50, radius: 30, isAlive: true };
         box.checkHit(target1);
         box.checkHit(target2);
         assert(!target1.isAlive && !target2.isAlive, "False negative");
+
+        target1.isInvincible = true;
+        target1.isAlive = true;
+        box.checkHit(target1);
+        assert(target1.isAlive, "Target is invincible");
     }
 }
 
-describe.only('Hitboxes', function () {
+describe('Hitboxes', function () {
     it('should work for Attacks', generateHitTest(Attack));
     it('should work for Projectiles', generateHitTest(Projectile));
     describe('Attack', function () {
@@ -38,9 +44,10 @@ describe.only('Hitboxes', function () {
 
     describe('Projectile', function () {
         it('should move and advance frames', function () {
-            var proj = Projectile(20, 6, 7, -5, 0);
+            var proj = Projectile(20, 6, 7, -5, 0, 3);
+            assert(!proj.isDone());
             proj.move();
-            assert.deepEqual([proj.posx, proj.posy, proj.curFrame], [1, 7, 2]);
+            assert.deepEqual([proj.posx, proj.posy, proj.curFrame, proj.endFrame], [1, 7, 2, 3]);
         });
     });
 })

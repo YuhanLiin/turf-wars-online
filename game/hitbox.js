@@ -45,10 +45,11 @@ Attack.prototype = Object.assign({
 }, hitboxMixin);
 
 //Attacks managed by the game state; moves automatically and is not saved
-function Projectile(radius, px, py, vx, vy){
+function Projectile(radius, px, py, vx, vy, endFrame){
     var proj = Object.create(Projectile.prototype);
     proj.radius = radius;
     proj.curFrame = 1;
+    proj.endFrame = endFrame;
     proj.velx = vx;
     proj.vely = vy;
     proj.posx = px;
@@ -62,6 +63,10 @@ Projectile.prototype = Object.assign({
         this.posx += this.velx;
         this.posy += this.vely;
         this.curFrame++;
+    },
+
+    isDone(){
+        return this.curFrame >= this.endFrame;
     }
 }, hitboxMixin);
 

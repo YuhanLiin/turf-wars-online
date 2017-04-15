@@ -2,27 +2,15 @@ var Game = require('../../game/game.js');
 var Character = require('../../game/characters/character.js');
 var assert = require('assert');
 
-var oframeTime = Game.frameTime, oroster = Game.roster, omaxFrameSkips = Game.maxFrameSkips;
-describe('Gameobj', function () {
+describe.only('Gameobj', function () {
     //Restore original values
-    afterEach(function () {
-        Game.frameTime = oframeTime;
-        //Game.roster = oroster;
-        Game.maxFrameSkips = omaxFrameSkips;
-    });
-
     before(function () {
         Game.inject(setTimeout, () => { });
     })
 
     describe('frame ticks', function () {
-        var input = { vert: 0, hori: 0, skill: 0 };
-        before(function () {
-            Game.roster = { 'Character': Character };
-        });
-
         it('should run at the correct framerate', function (done) {
-            var game = Game({ gameId: 'id', player1: 'Character', player2: 'Character' }, { 'player1': input, 'player2': input });
+            var game = Game({player1: 'Slasher', player2: 'Slasher' });
             game.start();
             setTimeout(function () {
                 assert.strictEqual(game.frameCount, 3);
@@ -33,7 +21,7 @@ describe('Gameobj', function () {
         it('should handle load', function (done) {
             var games = [];
             for (let i = 0; i < 5; i++) {
-                games.push(Game({ gameId: 'id', player1: 'Character', player2: 'Character' }, { 'player1': input, 'player2': input }));
+                games.push(Game({ player1: 'Slasher', player2: 'Slasher' }));
                 games[i].start();
             }
             setTimeout(function () {

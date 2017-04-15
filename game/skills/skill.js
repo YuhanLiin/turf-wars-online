@@ -9,19 +9,7 @@ function Skill(character){
     return skill;
 }
 
-//Creates subclass factory, since the instance variables are same for all subclasses
-Skill.generateSub = function(){
-    function sub (character){
-        return Object.assign(Object.create(sub.prototype), Skill(character));
-    }
-    return sub;
-}
-
 Skill.prototype = {
-    //Interface for having setting the lists that attack skills output hitboxes into. Must be called at beginning
-    registerHitboxLists(attackList, projectileList){
-    },
-
     //Uses a skill if its cooldown has passed. Returns whether skill was actually used
     use(){
         if (this.curCooldown === 0 && this.character.canAct) {

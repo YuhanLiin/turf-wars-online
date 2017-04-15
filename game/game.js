@@ -1,34 +1,28 @@
 //Used server and clientside
+var Input = require('./input.js');
+var roster = {Slasher: require('./characters/slasher.js')};
 
-//Responsible for input, output, and game loop; gameJson maps playerId to character name, inputJson maps playerId to input manager. 
-function Game(gameJson, inputJson){
+//Responsible for input, output, and game loop; characterJson maps playerId to character name
+function Game(characterJson){
     var game = Object.create(Game.prototype);
     game.isDone = false;
     game.frameCount = 0;
-    game.id = gameJson.gameId;
     //Maps players to their characters and input managers
-    game.players = {};
+    game.characters = {};
+    game.inputs = {};
     //Player either starts top right or bottom left
     var startPositions = [{px: 40, py: 40, dx: 1, dy: 1}, {px: game.width-40, py: game.height-40, dx: -1, dy: -1}]
-    for (let prop in gameJson){
+    for (let player in characterJson){
         //Populates players object
-        if (prop !== 'gameId') {
-            let args = startPositions.pop();
-            var playerObj = game.players[prop] = {};
-            //Constructs character models and their positions on the map
-            playerObj.attacks = [];
-            playerObj.projectiles = [];
-            playerObj.character = Game.roster[gameJson[prop]](game, args.px, args.py, args.dx, args.dy);
-            playerObj.input = inputJson[prop];
-            playerObj.character.skills.map(skill=>skill.registerHitboxLists(playerObj.attacks, playerObj.projectiles));
-        }
+        let args = startPositions.pop();
+        //Constructs character models and their positions on the map
+        game.characters[player] = roster[characterJson[player]](game, args.px, args.py, args.dx, args.dy);
+        game.inputs[player] = Input();
     }
     return game;
 }
 
 Game.frameTime = 1000/30;
-//Maps character names to factories
-Game.roster = {}
 //Max # of frames that can be processed every run(), to prevent accumulating delta time
 Game.maxFrameSkips = 10;
 
@@ -73,15 +67,27 @@ Game.inject = function (nextTick, sendUpdate) {
         update() {
             this.frameCount++;
             //Update the characteristics of each character according to the input
-            for (let player in this.players) {
-                let char = this.players[player].character;
-                let input = this.players[player].input;
+            for (let player in this.characters) {
+                let char = this.characters[player];
+                let input = this.inputs[player];
                 let dirx = input.hori, diry = input.vert, skillNum = input.skill;
-
-                char.frameProcess(dirx, diry, skillNum)
+                char.receiveInput(dirx, diry, skillNum);
+                char.frameProcess();
+                char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
+                char.projectileList.forEach(hitbox=>this.checkAllHits(hitbox, player));
             }
-            //For now, end game after 150 frames
+            //For now, end game after 150 frames TODO process player death
             if (this.frameCount >= 150) this.isDone = true;
+        },
+
+        checkAllHits(hitbox, playerId){
+            //Inactive hitboxes are skipped. Active hitboxes are checked against opponent
+            if (hitbox.curFrame === 0) return;
+            for (let id in this.players){
+                if (id !== playerId){
+                    hitbox.checkHit(this.players[id]);
+                }
+            }
         }
     };
 };

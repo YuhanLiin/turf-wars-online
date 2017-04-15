@@ -2,20 +2,20 @@ var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
     var char = Object.create(Character.prototype);
+    char.game = game;
     char.posx = px;
     char.posy = py;
     char.facex;
     char.facey;
+    char.canTurn = true;
     //Turn the player to initial direction but disable movement
     char.turn(dx, dy);
     char.isMoving = false;
     char.canAct = true;
-    char.canTurn = true;
     char.isAlive = true;
     char.isInvincible = false;
-    //Precomputed boundaries
-    char._limitx = game.width - char.radius;
-    char._limity = game.height - char.radius;
+    char.attackList = [];
+    char.projectileList = [];
     return char;
 }
 //Excluded baseSpeed, frameSpeed, and skills, a 4 element Skill array
@@ -37,8 +37,8 @@ Character.prototype = {
         //Bounds checking
         if (this.posx < this.radius) this.posx = this.radius;
         if (this.posy < this.radius) this.posy = this.radius;
-        if (this.posx > this._limitx) this.posx = this._limitx;
-        if (this.posy > this._limity) this.posy = this._limity;
+        if (this.posx > this.game.width - this.radius) this.posx = this.game.width - this.radius;
+        if (this.posy > this.game.height - this.radius) this.posy = this.game.height - this.radius;
     },
 
     //Determines player's facing values based on directional input.
@@ -61,18 +61,32 @@ Character.prototype = {
         }
     },
 
-    //Takes user input and runs all of character's processing for one frame. Returns whether a skill was used or not
-    frameProcess(dirx, diry, skillNum){
-        //Determine facing, process skills, then move (allows dashes on frame 1)
-        var skillUsed = false;
+    processProjectiles(){
+        for (let i=0; i<this.projectileList.length; i++){
+            var proj = this.projectileList[i];
+            //Move projectile every frame and remove those that have reached end of lifetime
+            if (proj.isDone()){
+                this.projectileList.splice(i, 1);
+                i--;
+            }
+            proj.move();
+        }
+    },
+
+    receiveInput(dirx, diry, skillNum){
         this.turn (dirx, diry);
+        var skillUsed = false;      
         if (skillNum) skillUsed = this.skills[skillNum-1].use();
+    },
+
+    //Takes user input and runs all of character's processing for one frame. Returns whether a skill was used or not
+    frameProcess(){        
         //Propagates frame process
         for (let i=0; i<this.skills.length; i++){
             this.skills[i].frameProcess();
         }
         this.move();
-        return skillUsed;
+        this.processProjectiles();
     }
 };
 
