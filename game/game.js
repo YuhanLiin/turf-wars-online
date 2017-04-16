@@ -24,7 +24,7 @@ function Game(characterJson){
 
 Game.frameTime = 1000/30;
 //Max # of frames that can be processed every run(), to prevent accumulating delta time
-Game.maxFrameSkips = 10;
+Game.maxFrameSkips = 30;
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
@@ -52,7 +52,7 @@ Game.inject = function (nextTick, sendUpdate) {
                 //For every single frame that should have passed between this tick and the last
                 for (let skips = 0; delta >= Game.frameTime; delta -= Game.frameTime, skips++) {
                     //Update game state and stop game loop if game is done
-                    self.update();
+                    self.frame();
                     if (self.isDone) return;
                     //If the number of frames per tick is too high, discard the remaining frames
                     if (skips >= Game.maxFrameSkips) delta = 0;
@@ -64,7 +64,7 @@ Game.inject = function (nextTick, sendUpdate) {
         },
 
         //Code that runs every frame. Updates game state by checking input records
-        update() {
+        frame() {
             this.frameCount++;
             //Update the characteristics of each character according to the input
             for (let player in this.characters) {
@@ -76,17 +76,42 @@ Game.inject = function (nextTick, sendUpdate) {
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
                 char.projectileList.forEach(hitbox=>this.checkAllHits(hitbox, player));
             }
-            //For now, end game after 150 frames TODO process player death
-            if (this.frameCount >= 150) this.isDone = true;
+            this.checkVictory();
         },
 
         checkAllHits(hitbox, playerId){
             //Inactive hitboxes are skipped. Active hitboxes are checked against opponent
             if (hitbox.curFrame === 0) return;
-            for (let id in this.players){
+            for (let id in this.characters){
                 if (id !== playerId){
-                    hitbox.checkHit(this.players[id]);
+                    hitbox.checkHit(this.characters[id]);
                 }
+            }
+        },
+
+        checkVictory(){
+            var alivePlayer, alivePlayerCount = 0;
+            //Loop thru players and count the ones that are alive
+            for (let playerId in this.characters){
+                let char = this.characters[playerId];
+                if (char.isAlive){
+                    alivePlayerCount++;
+                    alivePlayer = playerId;
+                }
+            }
+            //End the game if last man standing or everyone's down
+            if (alivePlayerCount <= 1){
+                for (let playerId in this.characters){
+                    if (playerId === alivePlayer){
+                        sendUpdate('Win', playerId);
+                    }
+                    //Dead players lose if someone else is alive; draw if everyone is down
+                    else{
+                        if (alivePlayerCount === 1) sendUpdate('Lose', playerId);
+                        else sendUpdate('Draw', playerId);
+                    }
+                }
+                this.isDone = true;
             }
         }
     };

@@ -3,6 +3,7 @@ var oneroot2 = 1 / Math.sqrt(2);
 function Character(game, px, py, dx, dy) {
     var char = Object.create(Character.prototype);
     char.game = game;
+    //Position on screen
     char.posx = px;
     char.posy = py;
     char.facex;
@@ -11,6 +12,7 @@ function Character(game, px, py, dx, dy) {
     //Turn the player to initial direction but disable movement
     char.turn(dx, dy);
     char.isMoving = false;
+    //Turned off when a skill is active
     char.canAct = true;
     char.isAlive = true;
     char.isInvincible = false;
