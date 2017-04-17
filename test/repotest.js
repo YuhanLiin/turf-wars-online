@@ -209,13 +209,20 @@ describe('repo', function(){
             });
         });
 
-        it("should update user's char selection", function () {
+        it("should update user's char selection and throw if the user tries again", function () {
             notifs = [];
             return repo.selectChar('user1', 'char')
             .then(() =>repo.pub.hgetAsync('user1', 'character'))
             .then(char=>assert.strictEqual(char, 'char'))
             //Make sure notif dont send prematurely
-            .then(() =>assert.deepStrictEqual([], notifs));
+            .then(() =>assert.deepStrictEqual([], notifs))
+            .then(()=>repo.selectChar('user1', 'char'))
+            .then(function () {
+                assert.fail('Should have thrown');
+            },
+            function (err) {
+                assert.strictEqual(err, 'UnregisteredUser');
+            });
         });
 
         it("should send notif when both users have selected characters", function () {

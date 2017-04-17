@@ -80,7 +80,6 @@ function upgradeRoom(trans, roomId, newUser, locks){
         }
         return Promise.resolve();
     }, newUser);
-    //TODO add logic for creating game object
 }
 
 //Let user join an available room
@@ -149,7 +148,6 @@ function disconnectGame(trans, roomId, locks, delUser) {
         }
         return Promise.resolve();
     });
-    //TODO clean up game object
 }
 
 //Let a user leave his current room
@@ -211,16 +209,17 @@ function selectChar(userId, character){
     var locks = [Lock(userId)];
     return locks[0].lock()
     //Find out which room the user is in
-    .then(()=>pub.multi().hget(userId, 'room').execAsync())
-    .then(function (batch) {
-        var roomId = batch[0];
-        //Gather all members in the user's room
-        if (roomId && roomId.startsWith('Game:')) {
+    .then(()=>pub.hgetallAsync(userId))
+    .then(function (user) {
+        //Only allow if the user has a room but hasnt picked a character already to prevent creating game twice
+        if (user && user.room && !user.character && user.room.startsWith('Game:')) {
+            var roomId = user.room;
             //Lock the room
             var roomLock = Lock(roomId);
             locks.push(roomLock);
             gameId = roomId;
             return roomLock.lock()
+            //Gather all members in the user's room
             .then(()=>pub.multi().smembers(roomId).execAsync());
         }
         //If user doesnt exist or is not in game room, throw error
@@ -269,6 +268,31 @@ function sendInput(userId, input) {
             return pub.multi().publish(`Input/${gameId}`, `${userId}:${input}`).execAsync();
         }
     });
+}
+
+function sendOutput(topic, userId, message){
+    return pub.hgetAsync(userId, 'room')
+    .then(function(gameId){
+        //For game ending events the game will be cleaned by leaveRoom once the players leave
+        if (topic === 'Win'){
+            //Winner wins. Everyone else loses
+            return broadcast(pub.multi(), gameId, function(trans, user){
+                if (user === userId){
+                    trans.publish('EndGame/win/'+user, '');
+                }
+                else{
+                    trans.publish('EndGame/lose/'+user, '');
+                }
+            });
+        }
+        else if (topic === 'Draw'){
+            //Everyone draws
+            return broadcast(pub.multi(), gameId, function(trans, user){
+                trans.publish('EndGame/draw/'+user, '');
+            });
+        }
+        //TODO other updates
+    }
 }
 
 module.exports.flushPromise = flushPromise;

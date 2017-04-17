@@ -39,7 +39,6 @@ function init(http){
             }
             else if (channel === 'EndGame/disconnect/' + socket.id) {
                 socket.emit('disconnectWin', message);
-                //TODO add logic for cleaning up the game
             }
         }
         repo.sub.on("pmessage", pubsubHandler);
