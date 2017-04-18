@@ -63,11 +63,11 @@ describe('sockets', function(){
             c2.on('startGame', function(){
                 var c3 = RoomClient(id);
                 c3.on('issue', function(issue){
-                        c3.on('disconnect', ()=>setTimeout(done,50));
                         assert.strictEqual(issue, 'GameExists');
                         c1.disconnect();
                         c2.disconnect();
                         c3.disconnect();
+                        done();
                 }); 
             }); 
         });
@@ -96,13 +96,14 @@ describe('sockets', function(){
 
     describe('/room selectChar and leaving games', function(){
         var socket1, socket2;
+        var id
 
         afterEach(function (done) {
             repo.pub.flushdb(done);
         });
 
         beforeEach(function(done){
-            var id = sid()
+            id = sid()
             socket1 = RoomClient(id);
             socket2 = RoomClient(id);
             socket2.on('startGame', function(){
@@ -132,16 +133,20 @@ describe('sockets', function(){
             socket2.disconnect();
         });
 
-        it('should create game when both characters are selected', function(done){
+        it('should create game and start client matches when both characters are selected', function(done){
             socket1.emit('selectChar', 'Blaster');
             socket2.emit('selectChar', 'Slasher');
-            socket2.on('createGame', done);
-            socket1.on('createGame', done)
+            socket2.on('startMatch', function(message){
+                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Blaster'});
+                done();
+            });
+            socket1.on('startMatch', function(message){
+                assert.deepStrictEqual(message, {you:'Blaster', opponent:'Slasher'});
+            });
         });
 
         it('should not race between selectChar and leaveRoom', function(done){
             socket2.on('disconnectWin', ()=>setTimeout(function(){
-                assert(!socket2.notifs.includes('createGame'))
                 done();
             }, 100));
             socket1.emit('selectChar', 'Blaster');

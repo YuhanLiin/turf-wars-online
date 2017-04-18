@@ -1,6 +1,7 @@
 var socketio = require('socket.io');
-var repo = require('./repository');
 var shortid = require('shortid');
+var repo = require('./repository');
+var createGame = require('./bootstrapper.js');
 
 var validCharNames = ['Slasher', 'Blaster'];
 
@@ -25,20 +26,37 @@ function init(http){
             else repo.selectChar(socket.id, char).catch((err)=>socket.emit('issue', err));
         });
 
-        var ownedGame;
+        //Verify and send input code to game
+        socket.on('input', function(inputCode){
+            if (inputCode.length === 2){
+                repo.sendInput(socket.id, inputCode).catch(console.log);
+            }
+        });
+
         function pubsubHandler(pattern, channel, message) {
             if (channel === 'StartGame/' + socket.id) {
                 socket.emit('startGame', message);
             }
             else if (channel === 'CreateGame/' + socket.id) {
-                //Debug purposes
-                socket.emit('createGame', '');
+                //Creates the game from the given json of character mappings
                 var gameJson = JSON.parse(message);
-                ownedGame = gameJson.gameId;
-                //TODO add logic for creating the game
+                createGame(gameJson)
             }
-            else if (channel === 'EndGame/disconnect/' + socket.id) {
-                socket.emit('disconnectWin', message);
+            else if (channel === 'StartMatch/' + socket.id) {
+                var gameJson = JSON.parse(message);
+                //Modify the gameJson for client use by replacing the socket ids with the terms 'you' and 'opponent'
+                //Also skips over gameId, since that is useless for client
+                var clientJson = Object.keys(gameJson).reduce(function(json, key){
+                    if (key === socket.id) json['you'] = gameJson[key];
+                    else if (key !== 'gameId') json['opponent'] = gameJson[key];
+                    return json;
+                }, {});
+                socket.emit('startMatch', clientJson);
+            }
+            else if (channel.startsWith('EndGame/') && channel.endsWith(socket.id)) {
+                //Send the middle action portion of the end game channel as event for client
+                var action = channel.replace('EndGame/', '').replace('/'+socket.id, '');
+                socket.emit(action, message);
             }
         }
         repo.sub.on("pmessage", pubsubHandler);

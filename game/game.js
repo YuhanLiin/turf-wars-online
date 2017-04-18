@@ -99,14 +99,18 @@ Game.inject = function (nextTick, sendUpdate) {
                     alivePlayer = playerId;
                 }
             }
-            //One player wins if last man standing
-            if (alivePlayerCount === 1){
-                sendUpdate('Win', alivePlayer);
-                this.isDone = true;
-            }
-            //All players draw if everyone is down. Send random player to get game room
-            else if (alivePlayerCount === 0) {
-                sendUpdate('Draw', Object.keys(this.characters)[0]);
+            //End the game if last man standing or everyone's down
+            if (alivePlayerCount <= 1){
+                for (let playerId in this.characters){
+                    if (playerId === alivePlayer){
+                        sendUpdate('win', playerId);
+                    }
+                    //Dead players lose if someone else is alive; draw if everyone is down
+                    else{
+                        if (alivePlayerCount === 1) sendUpdate('lose', playerId);
+                        else sendUpdate('draw', playerId);
+                    }
+                }
                 this.isDone = true;
             }
         }

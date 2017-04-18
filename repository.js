@@ -5,7 +5,7 @@ var redis = Promise.promisifyAll(require("redis"));
 var url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
-sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*');
+sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*', 'StartMatch/*');
 var flushPromise = pub.flushdbAsync();
 sub.setMaxListeners(400);
 
@@ -140,7 +140,7 @@ function disconnectGame(trans, roomId, locks, delUser) {
     trans.del(roomId).srem('gameRooms', roomId).publish('Games/delete', roomId);
     //Send a disconnected notification to all remaining users and disconnect them
     return broadcast(trans, roomId, function(trans, userId){
-        trans.publish('EndGame/disconnect/'+userId, '').del(userId)
+        trans.publish('EndGame/disconnectWin/'+userId, '').del(userId)
         if (userId !== delUser) {
             var lk = Lock(userId);
             locks.push(lk);
@@ -252,7 +252,8 @@ function selectChar(userId, character){
         if (allSelected) {
             //Send the mappings and the gameId to the user to create game and set handler for this specific game
             var charMappings = {'gameId': gameId};
-            room.map((userId, i) =>charMappings[userId] = chars[i]);
+            room.forEach((userId, i)=>charMappings[userId] = chars[i]);
+            room.forEach((userId)=>trans.publish('StartMatch/'+userId, JSON.stringify(charMappings)));
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
         return trans.execAsync();
@@ -262,36 +263,17 @@ function selectChar(userId, character){
 
 //Publish an input notification to the user's game. Message is user's id and the contents of notification
 function sendInput(userId, input) {
-    return pub.hgetAsync(userId, 'room')
-    .then(function (gameId) {
-        if (gameId){
-            return pub.multi().publish(`Input/${gameId}`, `${userId}:${input}`).execAsync();
-        }
-    });
+    return pub.multi().publish(`Input/${userId}`, `${input}`).execAsync();
 }
 
 function sendOutput(topic, userId, message){
-    return pub.hgetAsync(userId, 'room')
-    .then(function(gameId){
-        //For game ending events the game will be cleaned by leaveRoom once the players leave
-        if (topic === 'Win'){
-            //Winner wins. Everyone else loses
-            return broadcast(pub.multi(), gameId, function(trans, user){
-                if (user === userId){
-                    trans.publish('EndGame/win/'+user, '');
-                }
-                else{
-                    trans.publish('EndGame/lose/'+user, '');
-                }
-            });
-        }
-        else if (topic === 'Draw'){
-            //Everyone draws
-            return broadcast(pub.multi(), gameId, function(trans, user){
-                trans.publish('EndGame/draw/'+user, '');
-            });
-        }
-        //TODO other updates
+    switch(topic){
+        case 'win':
+        case 'lose':
+        case 'draw':
+            return pub.multi().publish(`EndGame/${topic}/${userId}`, '').execAsync();
+            break;
+        //Other updates
     }
 }
 

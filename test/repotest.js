@@ -2,17 +2,19 @@ var assert = require('assert');
 var repo = require('../repository.js');
 
 var notifs = [];
+var channels = [];
 repo.sub.on('pmessage', function(pattern, channel, message){
+    channels.push(channel);
     notifs.push(channel+message);
 });
 
 describe('repo', function(){
-    describe('joinRoom()', function(){
-        after(function(){ 
-            notifs = [];
-            return repo.pub.flushdbAsync();
-        });
+    after(function(){ 
+        notifs = [];
+        return repo.pub.flushdbAsync();
+    });
 
+    describe('joinRoom()', function(){
         it('should add new user to room', function(){
             //Add new user to room1. Get the room
             return repo.joinRoom('room1', 'user1')
@@ -94,13 +96,8 @@ describe('repo', function(){
     });
 
     describe('leaveRoom()', function(){
-        after(function(){ 
-            notifs = [];
-            return repo.pub.flushdbAsync();
-        });
-
         afterEach(function(){
-            return repo.pub;
+            return repo.pub.flushdbAsync();
         })
 
         it('should do nothing on empty delete', function(){
@@ -161,8 +158,8 @@ describe('repo', function(){
 
         it('should inform of deleted game and also a disconnection to users', function(){
             assert(notifs.includes('Games/delete'+'Game:room3'), 'notif for deleting room3');
-            assert(notifs.includes('EndGame/disconnect/'+'user1'), 'notif for telling user1');
-            assert(notifs.includes('EndGame/disconnect/'+'user2'), 'notif for telling user2');
+            assert(notifs.includes('EndGame/disconnectWin/'+'user1'), 'notif for telling user1');
+            assert(notifs.includes('EndGame/disconnectWin/'+'user2'), 'notif for telling user2');
         })
     });
 
@@ -189,7 +186,6 @@ describe('repo', function(){
 
     describe('selectChar()', function () {
         after(function(){ 
-            notifs = [];
             return repo.pub.flushdbAsync();
         });
 
@@ -230,6 +226,8 @@ describe('repo', function(){
             .then(() =>repo.pub.hgetAsync('user2', 'character'))
             .then(char=>assert.deepStrictEqual(char, 'char2', 'should have set char2'))
             .then(function () {
+                assert(channels.includes('StartMatch/'+'user1'), 'Start match with user 1');
+                assert(channels.includes('StartMatch/'+'user2'), 'Start match with user 2');
                 for (let i = 0; i < notifs.length; i++) {
                     if (notifs[i].startsWith('CreateGame/user2')) {
                         var json = JSON.parse(notifs[i].replace('CreateGame/user2', ''));
@@ -247,16 +245,11 @@ describe('repo', function(){
             return repo.pub.flushdbAsync();
         });
 
-        it('should ignore nonexistent users', function(){
-            return repo.sendInput('user', 'b1')
-            .then(()=>assert.deepStrictEqual([], notifs));
-        });
-
         it('should send correct notification', function(){
             return repo.joinRoom('room1', 'user1')
             .then(()=>repo.joinRoom('room1', 'user2'))
             .then(()=>repo.sendInput('user1', 'c3'))
-            .then(()=>assert(notifs.includes('Input/Game:room1'+'user1:c3')));
+            .then(()=>assert(notifs.includes('Input/user1'+'c3')));
         });
     });
 });
