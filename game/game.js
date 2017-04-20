@@ -1,15 +1,14 @@
 //Used server and clientside
-var Input = require('./input.js');
 var roster = {Slasher: require('./characters/slasher.js')};
 
-//Responsible for input, output, and game loop; characterJson maps playerId to character name
-function Game(characterJson){
+//Responsible for input, output, and game loop; characterJson maps playerId to character name; inputJson maps inputManagers to character name
+function Game(characterJson, inputJson){
     var game = Object.create(Game.prototype);
     game.isDone = false;
     game.frameCount = 0;
     //Maps players to their characters and input managers
     game.characters = {};
-    game.inputs = {};
+    game.inputs = inputJson;
     //Player either starts top right or bottom left
     var startPositions = [{px: 40, py: 40, dx: 1, dy: 1}, {px: game.width-40, py: game.height-40, dx: -1, dy: -1}]
     for (let player in characterJson){
@@ -17,7 +16,6 @@ function Game(characterJson){
         let args = startPositions.pop();
         //Constructs character models and their positions on the map
         game.characters[player] = roster[characterJson[player]](game, args.px, args.py, args.dx, args.dy);
-        game.inputs[player] = Input();
     }
     return game;
 }
@@ -70,8 +68,13 @@ Game.inject = function (nextTick, sendUpdate) {
             for (let player in this.characters) {
                 let char = this.characters[player];
                 let input = this.inputs[player];
-                let dirx = input.hori, diry = input.vert, skillNum = input.skill;
-                char.receiveInput(dirx, diry, skillNum);
+                let dirx = input.hori(), diry = input.vert(), skillNum = input.skill();
+                //Only process inputs if input queue isnt empty, since no lag compensation is available
+                if (dirx != undefined) {
+                    char.receiveInput(dirx, diry, skillNum);
+                    //Stream the player's input if there is any
+                    sendUpdate('update', player, input.pack(dirx, diry, skillNum))
+                }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
                 char.projectileList.forEach(hitbox=>this.checkAllHits(hitbox, player));

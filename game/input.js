@@ -11,22 +11,14 @@ function InputRecord() {
     return obj;
 }
 
-var inputMap = {'u':-1, 'd':1, 'l':-1, 'r':1, '1':1, '2':2, '3':3, '4':4};
+var dirInputMap = { 'n': -1, '0': 0, '1': 1 };
 
 //Prototype for object that tracks the user inputs
 InputRecord.prototype = {
     //Sets keycode for specific input type
-    set(newKey, onoff, inputType) {
-        var curKey = this[inputType].peekBack();
-        //If input is turned off, turn it off if the input key matches the currently stored key
-        if (onoff === '0') {
-            if (newKey === curKey || curKey === undefined) {
-                newKey = 0;
-            }
-            else{
-                newKey = curKey;
-            }
-        }
+    set(newKey, inputType) {
+        //Prevent overflow
+        if (this[inputType].length >= 30) return;
         //Append keycode to the queue
         this[inputType].push(newKey);
     },
@@ -43,11 +35,29 @@ InputRecord.prototype = {
     },
 
     //Input processor method that delegates different method types to different records
-    //Format is vert, hori, skill
+    
     process(inputCode) {
-        this.set(inputMap[inputCode[0]], inputCode[1], '_vert');
-        this.set(inputMap[inputCode[2]], inputCode[3], '_hori');
-        this.set(inputMap[inputCode[4]], inputCode[5], '_skill');
+        var [v, h, s] = this.unpack(inputCode);
+        //Validate input
+        if (h === undefined || v === undefined || s === NaN) return;
+        this.set(v, '_vert');
+        this.set(h, '_hori');
+        this.set(s, '_skill');
+    },
+
+    //Unpack inputCode into numbers. Format is vert, hori, skill (3 chars)
+    unpack(inputCode) {
+        return [dirInputMap[inputCode[0]], dirInputMap[inputCode[1]], parseInt(inputCode[2])];
+    },
+
+    //Reverses unpack action and returns inputcode for redirecting
+    pack(...args) {
+        var code = '';
+        for (let i = 0; i < 3; i++) {
+            if (args[i] === -1) code += 'n';
+            else code += args[i].toString();
+        }
+        return code;
     }
 };
 
