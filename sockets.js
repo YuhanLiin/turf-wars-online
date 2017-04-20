@@ -28,7 +28,7 @@ function init(http){
 
         //Verify and send input code to game
         socket.on('input', function(inputCode){
-            if (inputCode.length === 2){
+            if (inputCode.length === 6){
                 repo.sendInput(socket.id, inputCode).catch(console.log);
             }
         });

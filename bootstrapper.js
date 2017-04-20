@@ -1,5 +1,5 @@
 var Game = require('./game/game.js');
-var repo = require('./repo.js')
+var repo = require('./repository.js')
 
 var games = {};
 var inputManagers = {};
@@ -35,13 +35,13 @@ function createGame(gameJson){
 }
 
 //Only send updates to redis if game is not done. Ignore errors
-function(topic, userId, message){
+function sendUpdate (topic, userId, message){
     if (!this.isDone){
         repo.sendOutput(topic, userId, message)
         .catch(err=>{});
     }    
 }
 
-Game.inject(setTimeout, sendOutput);
+Game.inject(setTimeout, sendUpdate);
 
 module.exports = createGame;

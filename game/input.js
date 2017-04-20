@@ -1,59 +1,53 @@
 //Used server and client side
 
 //Creates new input record
-function InputRecord (){
+var Deque = require('denque');
+
+function InputRecord() {
     var obj = Object.create(InputRecord.prototype);
-    obj.vert = 0;
-    obj.hori = 0;
-    obj.skill = 0;
+    obj._vert = new Deque();
+    obj._hori = new Deque();
+    obj._skill = new Deque();
     return obj;
 }
+
+var inputMap = {'u':-1, 'd':1, 'l':-1, 'r':1, '1':1, '2':2, '3':3, '4':4};
 
 //Prototype for object that tracks the user inputs
 InputRecord.prototype = {
     //Sets keycode for specific input type
-    set(key, onoff, inputType) {
-        var curKey = this[inputType];
-        //If input is on, set it on
-        if (onoff === 1) {
-            this[inputType] = key;
-        }
-        //If input is turned off, turn it off the the input key matches the currently stored key
-        else if (onoff === 0) {
-            if (key === curKey) {
-                this[inputType] = 0;
+    set(newKey, onoff, inputType) {
+        var curKey = this[inputType].peekBack();
+        //If input is turned off, turn it off if the input key matches the currently stored key
+        if (onoff === '0') {
+            if (newKey === curKey || curKey === undefined) {
+                newKey = 0;
+            }
+            else{
+                newKey = curKey;
             }
         }
+        //Append keycode to the queue
+        this[inputType].push(newKey);
+    },
+
+    //API methods that consume and return the least recent input. Will return undefined when inputs run out, which calls for lag compensation
+    vert() {
+        return this._vert.shift();
+    },
+    hori() {
+        return this._hori.shift();
+    },
+    skill() {
+        return this._skill.shift();
     },
 
     //Input processor method that delegates different method types to different records
+    //Format is vert, hori, skill
     process(inputCode) {
-        var onoff = parseInt(inputCode[1]);
-        switch (inputCode[0]) {
-            //Up is -1 y axis
-            case 'u':
-                this.set(-1, onoff, 'vert');
-                break;
-            //Down is +1 y axis
-            case 'd':
-                this.set(1, onoff, 'vert');
-                break;
-            //Left is -1 x axis
-            case 'l':
-                this.set(-1, onoff, 'hori');
-                break;
-            //Right is +1 x axis
-            case 'r':
-                this.set(1, onoff, 'hori');
-                break;
-            //Numbers represent skill activation inputs
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-                this.set(parseInt(inputCode[0]), onoff, 'skill');
-                break;
-        }
+        this.set(inputMap[inputCode[0]], inputCode[1], '_vert');
+        this.set(inputMap[inputCode[2]], inputCode[3], '_hori');
+        this.set(inputMap[inputCode[4]], inputCode[5], '_skill');
     }
 };
 
