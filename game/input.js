@@ -23,19 +23,23 @@ InputRecord.prototype = {
         this[inputType].push(newKey);
     },
 
-    //API methods that consume and return the least recent input. Will return undefined when inputs run out, which calls for lag compensation
-    vert() {
-        return this._vert.shift();
-    },
-    hori() {
-        return this._hori.shift();
-    },
-    skill() {
-        return this._skill.shift();
+    //API method that consume and return the least recent input. 
+    get(){
+        return [this._vert.shift(), this._hori.shift(), this._skill.shift()];
     },
 
-    //Input processor method that delegates different method types to different records
-    
+    //API method returns if queue is empty. True means lag compensation is needed
+    isEmpty(){
+        return this._vert.isEmpty();
+    },
+
+    clear(){
+        this._vert.clear();
+        this._hori.clear();
+        this._skill.clear();
+    },
+
+    //Input processor method that delegates different method types to different records   
     process(inputCode) {
         var [v, h, s] = this.unpack(inputCode);
         //Validate input

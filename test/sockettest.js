@@ -152,6 +152,7 @@ describe('sockets', function(){
             socket1.emit('selectChar', 'Blaster');
             socket1.disconnect();
             socket2.emit('selectChar', 'Slasher');
-        })
+        });
     });
+    //TODO integration tests
 });

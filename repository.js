@@ -272,8 +272,8 @@ function sendOutput(topic, userId, message){
         case 'lose':
         case 'draw':
             return pub.multi().publish(`EndGame/${topic}/${userId}`, '').execAsync();
-            break;
-        //Other updates
+        case 'update':
+            return pub.multi().publish(`Update/${userId}`, message).execAsync();
     }
 }
 
@@ -285,3 +285,4 @@ module.exports.leaveRoom = leaveRoom;
 module.exports.getRooms = getRooms;
 module.exports.selectChar = selectChar;
 module.exports.sendInput = sendInput;
+module.exports.sendOutput = sendOutput;

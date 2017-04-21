@@ -1,5 +1,6 @@
 var Game = require('./game/game.js');
-var repo = require('./repository.js')
+var repo = require('./repository.js');
+var Input = require('./game/input.js');
 
 var games = {};
 var inputManagers = {};
@@ -26,11 +27,19 @@ repo.pub.on('pmessage', function(pattern, channel, message){
 
 //Creates a game and maps it to its ID
 function createGame(gameJson){
+    //Construct character JSON
     gameJson = JSON.parse(gameJson);
     var gameId = gameJson.gameId;
     delete gameJson.gameId;
-    games[gameId] = Game(gameJson);
-    Object.keys(gameJson).forEach(id=>inputManagers[id]=game.inputs[id]);
+
+    //Construct serverside input managers and register them
+    var inputJson = Object.keys(gameJson).reduce(function(json, id){
+        json[id] = Input();
+        inputManagers[id] = json[id];
+        return json;
+    }, {});
+    //Make game happen
+    games[gameId] = Game(gameJson, inputJson);
     game.start();
 }
 

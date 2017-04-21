@@ -22,7 +22,9 @@ function Game(characterJson, inputJson){
 
 Game.frameTime = 1000/30;
 //Max # of frames that can be processed every run(), to prevent accumulating delta time
-Game.maxFrameSkips = 30;
+Game.maxTickFrames = 50;
+//Max amount of time to wait for a user input before considering the user to be disconnected
+Game.maxWaitTime = 200;
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
@@ -40,6 +42,22 @@ Game.inject = function (nextTick, sendUpdate) {
             var then = Date.now();
             var delta = 0;
             var self = this;
+            
+            //Check if inputs from all players are available. Returns whether to let the next frame run 
+            function checkInputs(){
+                for (let id in self.inputs){
+                    let input = self.inputs[id];
+                    //If a player's input isnt there dont let frame run
+                    if (input.isEmpty()){
+                        //If the wait time has exceeded the max then delta then let the next frame run (desync with client)
+                        if (delta > Game.maxWaitTime){
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+                return true;
+            }
 
             //Computes each tick of game loop
             function tick() {
@@ -48,12 +66,18 @@ Game.inject = function (nextTick, sendUpdate) {
                 delta += now - then;
                 then = now;
                 //For every single frame that should have passed between this tick and the last
-                for (let skips = 0; delta >= Game.frameTime; delta -= Game.frameTime, skips++) {
+                for (let tickFrames = 0; delta >= Game.frameTime; delta -= Game.frameTime, tickFrames++) {
+                    //If no inputs then skip to next tick
+                    if (!checkInputs()) break;
                     //Update game state and stop game loop if game is done
                     self.frame();
                     if (self.isDone) return;
-                    //If the number of frames per tick is too high, discard the remaining frames
-                    if (skips >= Game.maxFrameSkips) delta = 0;
+                    //If the number of frames per tick is too high, discard the remaining frames and clear all inputs
+                    if (tickFrames >= Game.maxTickFrames) {
+                        delta = 0;
+                        //Should probably send corrective state
+                        Object.values(game.inputs).forEach(input=>input.clear());
+                    }
                 }
                 //Propagate to the next tick to gather more delta
                 self.nextTick(tick);
@@ -68,9 +92,9 @@ Game.inject = function (nextTick, sendUpdate) {
             for (let player in this.characters) {
                 let char = this.characters[player];
                 let input = this.inputs[player];
-                let dirx = input.hori(), diry = input.vert(), skillNum = input.skill();
-                //Only process inputs if input queue isnt empty, since no lag compensation is available
-                if (dirx != undefined) {
+                let [dirx, diry, skillNum] = input.get();
+                //Only process inputs if input queue isnt empty
+                if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);
                     //Stream the player's input if there is any
                     sendUpdate('update', player, input.pack(dirx, diry, skillNum))
