@@ -226,8 +226,6 @@ describe('repo', function(){
             .then(() =>repo.pub.hgetAsync('user2', 'character'))
             .then(char=>assert.deepStrictEqual(char, 'char2', 'should have set char2'))
             .then(function () {
-                assert(channels.includes('StartMatch/'+'user1'), 'Start match with user 1');
-                assert(channels.includes('StartMatch/'+'user2'), 'Start match with user 2');
                 for (let i = 0; i < notifs.length; i++) {
                     if (notifs[i].startsWith('CreateGame/user2')) {
                         var json = JSON.parse(notifs[i].replace('CreateGame/user2', ''));
@@ -252,4 +250,21 @@ describe('repo', function(){
             .then(()=>assert(notifs.includes('Input/user1'+'c3')));
         });
     });
+
+    describe('sendOutput()', function(){
+        it('should send correct outputs for everything', function(){
+            return repo.sendOutput('lose', 'user')
+            .then(()=>repo.sendOutput('win', 'user'))
+            .then(()=>repo.sendOutput('draw', 'user'))
+            .then(()=>repo.sendOutput('update', 'user', 'input'))
+            .then(()=>repo.sendOutput('start', 'user', '{}'))
+            .then(function(){
+                assert(notifs.includes('EndGame/lose/user'), 'should lose');
+                assert(notifs.includes('EndGame/win/user'), 'should win');
+                assert(notifs.includes('EndGame/draw/user'), 'should draw');
+                assert(notifs.includes('Update/user'+'input'), 'should update');
+                assert(notifs.includes('StartMatch/user'+'{}'), 'should start match');
+            })
+        })
+    })
 });

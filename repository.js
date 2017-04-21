@@ -5,7 +5,7 @@ var redis = Promise.promisifyAll(require("redis"));
 var url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
-sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*', 'StartMatch/*');
+sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*', 'StartMatch/*', 'Update/*');
 var flushPromise = pub.flushdbAsync();
 sub.setMaxListeners(400);
 
@@ -253,7 +253,6 @@ function selectChar(userId, character){
             //Send the mappings and the gameId to the user to create game and set handler for this specific game
             var charMappings = {'gameId': gameId};
             room.forEach((userId, i)=>charMappings[userId] = chars[i]);
-            room.forEach((userId)=>trans.publish('StartMatch/'+userId, JSON.stringify(charMappings)));
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
         return trans.execAsync();
@@ -268,12 +267,17 @@ function sendInput(userId, input) {
 
 function sendOutput(topic, userId, message){
     switch(topic){
+        //Conclude game
         case 'win':
         case 'lose':
         case 'draw':
             return pub.multi().publish(`EndGame/${topic}/${userId}`, '').execAsync();
+        //Update client with server input
         case 'update':
             return pub.multi().publish(`Update/${userId}`, message).execAsync();
+        //Start the match client side
+        case 'start':
+            return pub.multi().publish('StartMatch/'+userId, message).execAsync();
     }
 }
 

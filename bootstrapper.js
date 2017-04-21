@@ -38,9 +38,11 @@ function createGame(gameJson){
         inputManagers[id] = json[id];
         return json;
     }, {});
-    //Make game happen
     games[gameId] = Game(gameJson, inputJson);
-    game.start();
+    //Tell clients to start game first
+    Object.keys(gameJson).forEach(id=>sendUpdate('start', id, JSON.stringify(gameJson)));
+    //Make game happen after 50ms delay to give clients time to start
+    setTimeout(()=>game.start(), 50);
 }
 
 //Only send updates to redis if game is not done. Ignore errors

@@ -3,11 +3,13 @@ var Input = require('../../game/input.js');
 var Character = require('../../game/characters/character.js');
 var assert = require('assert');
 
-describe.only('Gameobj', function () {
+describe('Gameobj', function () {
     //Have all of the game's updates redirected to a collection
     var endUpdates = [];
     var updates = {};
+    var original;
     before(function(){
+        original = Game.prototype;
         Game.inject(setTimeout, function (topic, player, message='') {
             if (topic === 'update'){
                 if (!updates[player]){
@@ -18,6 +20,10 @@ describe.only('Gameobj', function () {
             else endUpdates.push(topic+player+message);
         });
     });
+
+    after(function(){
+        Game.prototype = original;
+    })
 
     describe('frame ticks and lag compensation', function () {
         var input1, input2;
