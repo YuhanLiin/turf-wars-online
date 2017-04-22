@@ -3,11 +3,11 @@ var shortid = require('shortid');
 var repo = require('./repository');
 var createGame = require('./bootstrapper.js');
 
-var validCharNames = ['Slasher', 'Blaster'];
+var validCharNames = Object.keys(require('./game/game.js').roster);
 
 function init(http){
     var io = socketio(http);
-    //The main room where the user agregation and actual game takes place
+    //The main room where the user aggregation and actual game takes place
     io.of('room').on('connect', function (socket) {
         socket.on('error', function(err){
             console.log(err);
@@ -33,6 +33,7 @@ function init(http){
             }
         });
 
+        var opponent;
         function pubsubHandler(pattern, channel, message) {
             if (channel === 'StartGame/' + socket.id) {
                 socket.emit('startGame', message);
@@ -48,10 +49,17 @@ function init(http){
                 //Also skips over gameId, since that is useless for client
                 var clientJson = Object.keys(gameJson).reduce(function(json, key){
                     if (key === socket.id) json['you'] = gameJson[key];
-                    else if (key !== 'gameId') json['opponent'] = gameJson[key];
+                    else if (key !== 'gameId') {
+                        //Set opponent id for receiving updates
+                        opponent = gameJson[key];
+                        json['opponent'] = opponent;
+                    }
                     return json;
                 }, {});
                 socket.emit('startMatch', clientJson);
+            }
+            else if (channel === 'Update/'+opponent){
+                socket.emit('oUpdate', message);
             }
             else if (channel.startsWith('EndGame/') && channel.endsWith(socket.id)) {
                 //Send the middle action portion of the end game channel as event for client

@@ -6,7 +6,7 @@ var games = {};
 var inputManagers = {};
 
 //Handles game specific messages
-repo.pub.on('pmessage', function(pattern, channel, message){
+repo.sub.on('pmessage', function(pattern, channel, message){
     //Receives and redirects all input messages to correct inputmanagers
     if (pattern === 'Input/*'){
         var userId = channel.replace('Input/', '');
@@ -19,6 +19,7 @@ repo.pub.on('pmessage', function(pattern, channel, message){
     else if (channel === 'Games/delete'){
         var game = games[message];
         if (game){
+            game.isDone = true;
             Object.keys(game.inputs).forEach(id=>delete inputManagers[id]);
         }
         delete games[message];
@@ -41,8 +42,8 @@ function createGame(gameJson){
     games[gameId] = Game(gameJson, inputJson);
     //Tell clients to start game first
     Object.keys(gameJson).forEach(id=>sendUpdate('start', id, JSON.stringify(gameJson)));
-    //Make game happen after 50ms delay to give clients time to start
-    setTimeout(()=>game.start(), 50);
+    //Make game happen after 30ms delay to give clients time to start
+    setTimeout(()=>games[gameId].start(), 30);
 }
 
 //Only send updates to redis if game is not done. Ignore errors

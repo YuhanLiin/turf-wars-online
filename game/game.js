@@ -1,6 +1,3 @@
-//Used server and clientside
-var roster = {Slasher: require('./characters/slasher.js')};
-
 //Responsible for input, output, and game loop; characterJson maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterJson, inputJson){
     var game = Object.create(Game.prototype);
@@ -15,7 +12,7 @@ function Game(characterJson, inputJson){
         //Populates players object
         let args = startPositions.pop();
         //Constructs character models and their positions on the map
-        game.characters[player] = roster[characterJson[player]](game, args.px, args.py, args.dx, args.dy);
+        game.characters[player] = Game.roster[characterJson[player]](game, args.px, args.py, args.dx, args.dy);
     }
     return game;
 }
@@ -25,6 +22,8 @@ Game.frameTime = 1000/30;
 Game.maxTickFrames = 50;
 //Max amount of time to wait for a user input before considering the user to be disconnected
 Game.maxWaitTime = 200;
+//Available characters
+Game.roster = {Slasher: require('./characters/slasher.js')};
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
@@ -67,11 +66,12 @@ Game.inject = function (nextTick, sendUpdate) {
                 then = now;
                 //For every single frame that should have passed between this tick and the last
                 for (let tickFrames = 0; delta >= Game.frameTime; delta -= Game.frameTime, tickFrames++) {
+                    //Once game is over stop consuming CPU time
+                    if (self.isDone) return;
                     //If no inputs then skip to next tick
                     if (!checkInputs()) break;
                     //Update game state and stop game loop if game is done
                     self.frame();
-                    if (self.isDone) return;
                     //If the number of frames per tick is too high, discard the remaining frames and clear all inputs
                     if (tickFrames >= Game.maxTickFrames) {
                         delta = 0;

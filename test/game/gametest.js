@@ -25,7 +25,7 @@ describe('Gameobj', function () {
         Game.prototype = original;
     })
 
-    describe('frame ticks and lag compensation', function () {
+    describe('frame ticks', function () {
         var input1, input2;
         before(function(){
             input1 = Input(), input2 = Input();
@@ -74,8 +74,20 @@ describe('Gameobj', function () {
             }, 505);
         });
 
+        it('should not continue running after game is done', function(done){
+            var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
+            game.start;
+            game.isDone = true;
+            setTimeout(function(){
+                assert.strictEqual(game.frameCount, 0);
+                done();
+            }, 70)
+        })
+    });
+
+    describe('lag compensation', function(){
         it('should not update when inputs are delayed', function(done){
-            input1 = Input(), input2 = Input();
+            var input1 = Input(), input2 = Input();
             input1.process('000');
             var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
             game.start()
@@ -96,7 +108,7 @@ describe('Gameobj', function () {
         });
 
         it('should continue normal processing when input delay limit is reached', function(){
-            input1 = Input(), input2 = Input();
+            var input1 = Input(), input2 = Input();
             var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
             game.start()
             setTimeout(function(){
@@ -104,7 +116,7 @@ describe('Gameobj', function () {
                 game.isDone = true;
                 done();
             }, Game.maxWaitTime+35)
-        })
+        });
     });
 
     describe('Simple simulation', function(){
