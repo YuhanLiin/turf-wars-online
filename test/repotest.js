@@ -1,16 +1,22 @@
-var assert = require('assert');
-var repo = require('../repository.js');
-
-var notifs = [];
-var channels = [];
-repo.sub.on('pmessage', function(pattern, channel, message){
-    channels.push(channel);
-    notifs.push(channel+message);
-});
-
 describe('repo', function(){
+    var assert = require('assert');
+    var repo = require('../repository.js');
+
+    var notifs = [];
+    var channels = [];
+    var notifMock;
+
+    before(function(){
+        notifMock = function(pattern, channel, message){
+            channels.push(channel);
+            notifs.push(channel+message);
+        }
+        repo.sub.on('pmessage', notifMock);
+    })
+
     after(function(){ 
         notifs = [];
+        repo.sub.removeListener('pmessage', notifMock);
         return repo.pub.flushdbAsync();
     });
 

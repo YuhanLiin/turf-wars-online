@@ -1,16 +1,13 @@
-var boot = require('../bootstrapper.js');
-var Game = require('../game/game.js');
-var repo = require('../repository.js');
-var assert = require('assert');
-
 describe('serverside game bootstrapper', function(){
+    var boot = require('../bootstrapper.js');
+    var Game = require('../game/game.js');
+    var repo = require('../repository.js');
+    var assert = require('assert');
+
     var game;
     var notifs = [];
     var start;
-    //Keep track of all notifs
-    repo.sub.on('pmessage', function(pattern, channel, message){
-        if (pattern === 'StartMatch/*' || pattern === 'Update/*') notifs.push(channel+message);
-    });
+    var notifMock;
 
     before(function(){
         start = Game.prototype.start;
@@ -18,10 +15,16 @@ describe('serverside game bootstrapper', function(){
             start.apply(this);
             game = this;
         }
+        //Keep track of all notifs
+        notifMock = function(pattern, channel, message){
+            if (pattern === 'StartMatch/*' || pattern === 'Update/*') notifs.push(channel+message);
+        }
+        repo.sub.on('pmessage', notifMock);
     });
 
     after(function(){
         Game.prototype.start = start;
+        repo.sub.removeListener('pmessage', notifMock);
     });
 
     it('should create game and update players', function(done){

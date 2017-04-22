@@ -1,9 +1,9 @@
-var gamemock = {width: 800, height:700};
-var Character = require('../../game/characters/character.js');
-var Projectile = require('../../game/hitbox.js').Projectile;
-var assert = require('assert');
-
 describe('Base Character', function(){
+    var gamemock = {width: 800, height:700};
+    var Character = require('../../game/characters/character.js');
+    var Projectile = require('../../game/hitbox.js').Projectile;
+    var assert = require('assert');
+    
     var char;
     beforeEach(function(){
         char = Character(gamemock, 40, 40, 1, 1);

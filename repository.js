@@ -204,7 +204,6 @@ function getRooms(){
 
 //Have the player select a character after joining a game
 function selectChar(userId, character){
-    //console.log(userId, 'selectstart');
     var room, chars, gameId;
     var locks = [Lock(userId)];
     return locks[0].lock()

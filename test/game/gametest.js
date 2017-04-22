@@ -1,9 +1,9 @@
-var Game = require('../../game/game.js');
-var Input = require('../../game/input.js');
-var Character = require('../../game/characters/character.js');
-var assert = require('assert');
-
 describe('Gameobj', function () {
+    var Game = require('../../game/game.js');
+    var Input = require('../../game/input.js');
+    var Character = require('../../game/characters/character.js');
+    var assert = require('assert');
+
     //Have all of the game's updates redirected to a collection
     var endUpdates = [];
     var updates = {};
@@ -107,7 +107,7 @@ describe('Gameobj', function () {
             }, 95);
         });
 
-        it('should continue normal processing when input delay limit is reached', function(){
+        it('should continue normal processing when input delay limit is reached', function(done){
             var input1 = Input(), input2 = Input();
             var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
             game.start()
@@ -115,7 +115,7 @@ describe('Gameobj', function () {
                 assert.strictEqual(game.frameCount, 1);
                 game.isDone = true;
                 done();
-            }, Game.maxWaitTime+35)
+            }, Game.maxWaitTime+5)
         });
     });
 

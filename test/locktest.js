@@ -1,16 +1,16 @@
-var repo = require('../repository.js')
-var Lock = require('../lock.js')(repo.pub);
-var assert = require('assert');
+describe('lock:', function(){
+    var repo = require('../repository.js')
+    var Lock = require('../lock.js')(repo.pub);
+    var assert = require('assert');
 
-//Used to ensure promise throws
-function fail(){
-    return assert.fail('should have thrown');
-}
-function checkErr(err){
-    return assert.strictEqual(err, 'LockFailed');
-}
+    //Used to ensure promise throws
+    function fail(){
+        return assert.fail('should have thrown');
+    }
+    function checkErr(err){
+        return assert.strictEqual(err, 'LockFailed');
+    }
 
-describe('lock', function(){
     describe('lock(), unlock()', function(){
         afterEach(function(){
             return repo.pub.flushdbAsync();

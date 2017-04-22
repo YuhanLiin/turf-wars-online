@@ -1,36 +1,37 @@
-var io = require('socket.io-client');
-var repo = require('../repository.js');
-var sid = require('shortid').generate;
-var assert = require('assert');
+describe('sockets', function(){
+    var io = require('socket.io-client');
+    var repo = require('../repository.js');
+    var sid = require('shortid').generate;
+    var assert = require('assert');
+    var sockets = require('../sockets.js');
 
-var sockets = require('../sockets.js');
-var http = require('http').createServer();
-sockets.init(http);
-http.listen(5000);
-var url = 'http://localhost:5000';
+    var http = require('http').createServer();
+    sockets.init(http);
+    http.listen(5000);
+    var url = 'http://localhost:5000';
 
-function ClientClass(room, events) {
-    return function (cb=()=>{}) {
-        var socket = io(url+room);
-        socket.notifs = [];
-        for (let i = 0 ; i < events.length; i++) {
-            let event = events[i];
-            socket.on(event, message=>socket.notifs.push(event + message));
+    function ClientClass(room, events) {
+        return function (cb=()=>{}) {
+            var socket = io(url+room);
+            socket.notifs = [];
+            for (let i = 0 ; i < events.length; i++) {
+                let event = events[i];
+                socket.on(event, message=>socket.notifs.push(event + message));
+            }
+            socket.on('connect', cb);
+            return socket;
         }
-        socket.on('connect', cb);
+    }
+
+    var RoomClient = function(roomId){
+        var socket = ClientClass('/room', ['issue', 'startGame', 'disconnectWin'])
+        (()=>socket.emit('roomId', roomId));
         return socket;
     }
-}
 
-var RoomClient = function(roomId){
-    var socket = ClientClass('/room', ['issue', 'startGame', 'disconnectWin'])
-    (()=>socket.emit('roomId', roomId));
-    return socket;
-}
+    var LobbyClient = ClientClass('/lobby', ['issue', 'add', 'delete']);
 
-var LobbyClient = ClientClass('/lobby', ['issue', 'add', 'delete']);
 
-describe('sockets', function(){
     describe('/room joining and leaving', function () { 
         afterEach(function (done) {
             repo.pub.flushdb(done);
@@ -134,22 +135,31 @@ describe('sockets', function(){
         });
 
         it('should create game and start client matches when both characters are selected', function(done){
-            socket1.emit('selectChar', 'Blaster');
-            socket2.emit('selectChar', 'Slasher');
+            //Prevent done from being called twice
+            var isDone = false;
             socket2.on('startMatch', function(message){
-                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Blaster'});
-                done();
+                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
+                if (!isDone){
+                    isDone = true;
+                    done();
+                }
             });
             socket1.on('startMatch', function(message){
-                assert.deepStrictEqual(message, {you:'Blaster', opponent:'Slasher'});
+                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
+                if (!isDone){
+                    isDone = true;
+                    done();
+                }
             });
+            socket1.emit('selectChar', 'Slasher');
+            socket2.emit('selectChar', 'Slasher');
         });
 
         it('should not race between selectChar and leaveRoom', function(done){
             socket2.on('disconnectWin', ()=>setTimeout(function(){
                 done();
             }, 100));
-            socket1.emit('selectChar', 'Blaster');
+            socket1.emit('selectChar', 'Slasher');
             socket1.disconnect();
             socket2.emit('selectChar', 'Slasher');
         });

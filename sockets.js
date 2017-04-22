@@ -41,7 +41,7 @@ function init(http){
             else if (channel === 'CreateGame/' + socket.id) {
                 //Creates the game from the given json of character mappings
                 var gameJson = JSON.parse(message);
-                createGame(gameJson)
+                createGame(message)
             }
             else if (channel === 'StartMatch/' + socket.id) {
                 var gameJson = JSON.parse(message);

@@ -1,33 +1,33 @@
-var hb = require('../../game/hitbox.js');
-var assert = require('assert')
-var Attack = hb.Attack;
-var Projectile = hb.Projectile;
-
-function generateHitTest(type) {
-    return function () {
-        var box = type(20);
-        box.posx = 40;
-        box.posy = 40;
-        var target1 = { posx: 70, posy: 20, radius: 10, isAlive:true };
-        var target2 = { posx: 40, posy: 90, radius: 30, isAlive:true };
-        box.checkHit(target1);
-        box.checkHit(target2);
-        assert(target1.isAlive && target2.isAlive, "False positive");
-
-        target1 = { posx: 60, posy: 20, radius: 21, isAlive: true };
-        target2 = { posx: 40, posy: 50, radius: 30, isAlive: true };
-        box.checkHit(target1);
-        box.checkHit(target2);
-        assert(!target1.isAlive && !target2.isAlive, "False negative");
-
-        target1.isInvincible = true;
-        target1.isAlive = true;
-        box.checkHit(target1);
-        assert(target1.isAlive, "Target is invincible");
-    }
-}
-
 describe('Hitboxes', function () {
+    var hb = require('../../game/hitbox.js');
+    var assert = require('assert')
+    var Attack = hb.Attack;
+    var Projectile = hb.Projectile;
+
+    function generateHitTest(type) {
+        return function () {
+            var box = type(20);
+            box.posx = 40;
+            box.posy = 40;
+            var target1 = { posx: 70, posy: 20, radius: 10, isAlive:true };
+            var target2 = { posx: 40, posy: 90, radius: 30, isAlive:true };
+            box.checkHit(target1);
+            box.checkHit(target2);
+            assert(target1.isAlive && target2.isAlive, "False positive");
+
+            target1 = { posx: 60, posy: 20, radius: 21, isAlive: true };
+            target2 = { posx: 40, posy: 50, radius: 30, isAlive: true };
+            box.checkHit(target1);
+            box.checkHit(target2);
+            assert(!target1.isAlive && !target2.isAlive, "False negative");
+
+            target1.isInvincible = true;
+            target1.isAlive = true;
+            box.checkHit(target1);
+            assert(target1.isAlive, "Target is invincible");
+        }
+    }
+    
     it('should work for Attacks', generateHitTest(Attack));
     it('should work for Projectiles', generateHitTest(Projectile));
     describe('Attack', function () {

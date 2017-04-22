@@ -1,7 +1,7 @@
-var input = require('../../game/input.js')();
-var assert = require('assert');
-
 describe('InputRecord', function(){
+    var input = require('../../game/input.js')();
+    var assert = require('assert');
+
     it('should update different input types', function(){
         input.process('nn3');
         assert.deepStrictEqual(input.get(), [-1, -1, 3]);
