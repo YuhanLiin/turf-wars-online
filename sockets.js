@@ -51,14 +51,15 @@ function init(http){
                     if (key === socket.id) json['you'] = gameJson[key];
                     else if (key !== 'gameId') {
                         //Set opponent id for receiving updates
-                        opponent = gameJson[key];
-                        json['opponent'] = opponent;
+                        opponent = key;
+                        json['opponent'] = gameJson[key];
                     }
                     return json;
                 }, {});
                 socket.emit('startMatch', clientJson);
             }
             else if (channel === 'Update/'+opponent){
+                //Should update opponent with game state
                 socket.emit('oUpdate', message);
             }
             else if (channel.startsWith('EndGame/') && channel.endsWith(socket.id)) {

@@ -24,7 +24,7 @@ describe('sockets', function(){
     }
 
     var RoomClient = function(roomId){
-        var socket = ClientClass('/room', ['issue', 'startGame', 'disconnectWin'])
+        var socket = ClientClass('/room', ['issue', 'startGame', 'disconnectWin', 'startMatch', 'oUpdate'])
         (()=>socket.emit('roomId', roomId));
         return socket;
     }
@@ -97,7 +97,7 @@ describe('sockets', function(){
 
     describe('/room selectChar and leaving games', function(){
         var socket1, socket2;
-        var id
+        var id;
 
         afterEach(function (done) {
             repo.pub.flushdb(done);
@@ -135,21 +135,17 @@ describe('sockets', function(){
         });
 
         it('should create game and start client matches when both characters are selected', function(done){
-            //Prevent done from being called twice
-            var isDone = false;
+            //Count # of start match notifs
+            var notifcount = 0;
             socket2.on('startMatch', function(message){
                 assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
-                if (!isDone){
-                    isDone = true;
-                    done();
-                }
+                notifcount++;
+                if (notifcount === 2) done()
             });
             socket1.on('startMatch', function(message){
                 assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
-                if (!isDone){
-                    isDone = true;
-                    done();
-                }
+                notifcount++;
+                if (notifcount === 2) done()
             });
             socket1.emit('selectChar', 'Slasher');
             socket2.emit('selectChar', 'Slasher');
@@ -164,5 +160,57 @@ describe('sockets', function(){
             socket2.emit('selectChar', 'Slasher');
         });
     });
-    //TODO integration tests
+    
+    describe('game integration tests', function(){
+        var socket1, socket2;
+        before(function(done){
+            //Setup the game
+            id = sid();
+            socket1 = RoomClient(id);
+            socket2 = RoomClient(id);
+            socket2.on('startGame', function(){
+                socket1.emit('selectChar', 'Slasher');
+                socket2.emit('selectChar', 'Slasher');
+            });
+            //Delay a bit after match starts to account for the delay before game is actually started
+            socket2.on('startMatch', ()=>setTimeout(done, 50));
+        });
+
+        beforeEach(function(){
+            socket1.notifs = [];
+            socket2.notifs = [];
+        })
+
+        it('should accept inputs and redirect them to opponent clients', function(done){
+            socket1.emit('input', '000');
+            socket2.emit('input', '100');
+            setTimeout(function(){
+                //Make sure both sockets get notifs before calling done
+                var count = 0;
+                socket1.emit('input', '000');
+                socket2.emit('input', '100');
+                socket1.on('oUpdate', function(){
+                    assert.deepStrictEqual(socket1.notifs, ['oUpdate'+'100', 'oUpdate'+'100']);
+                    count++;
+                    if(count === 2) done();
+                });
+                socket2.on('oUpdate', function(){
+                    assert.deepStrictEqual(socket2.notifs, ['oUpdate'+'000', 'oUpdate'+'000']);
+                    count++;
+                    if(count === 2) done();
+                });
+                socket2.on()
+            }, 40);
+        });
+
+        it('should deny malformed inputs', function(done){
+            socket1.emit('input', '0g0');
+            socket2.emit('input', '100k');
+            setTimeout(function(){
+                assert.deepStrictEqual(socket1.notifs, []);
+                assert.deepStrictEqual(socket2.notifs, []);
+                done();
+            }, 40);
+        });
+    })
 });
