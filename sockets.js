@@ -7,6 +7,8 @@ var validCharNames = Object.keys(require('./game/game.js').roster);
 
 function init(http){
     var io = socketio(http);
+    //Web sockets only
+    io.set('transports', ['websocket']);
     //The main room where the user aggregation and actual game takes place
     io.of('room').on('connect', function (socket) {
         socket.on('error', function(err){

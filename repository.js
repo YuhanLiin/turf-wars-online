@@ -6,9 +6,15 @@ var url = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 var pub = redis.createClient(url);
 var sub = redis.createClient(url);
 sub.psubscribe('Rooms/*', 'Games/*', 'StartGame/*', 'EndGame/*', 'CreateGame/*', 'Input/*', 'StartMatch/*', 'Update/*');
+//Prevent server start until everything has been flushed
 var flushPromise = pub.flushdbAsync();
 sub.setMaxListeners(400);
 
+//Log unexpected errors
+pub.on('error', console.log);
+sub.on('error', console.log);
+
+//Set up locking
 var Lock = require('./lock.js')(pub);
 //Simple promisified settimeout
 function delay(ms){

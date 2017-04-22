@@ -12,7 +12,8 @@ describe('sockets', function(){
 
     function ClientClass(room, events) {
         return function (cb=()=>{}) {
-            var socket = io(url+room);
+            //Web sockets only
+            var socket = io(url+room, {transports: ['websocket'], upgrade: false});
             socket.notifs = [];
             for (let i = 0 ; i < events.length; i++) {
                 let event = events[i];
