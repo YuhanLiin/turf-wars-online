@@ -1,11 +1,11 @@
-var charViews = require('./charView.js');
+var views = require('./allViews.js');
 
 var selectBoxes = [];
 var charDisplays = [];
 var skillDisplays = [];
 var selected = 0;
 
-function selectScreen(canvas, ratio) {
+function selectScreen(canvas) {
     $('canvas').off('keydown');
 
     canvas.setBackgroundColor('darkblue');
@@ -22,10 +22,12 @@ function selectScreen(canvas, ratio) {
     title.centerH();
 
     var x = 200;
-    for (let charName in charViews){
+    for (let charName in views){
         let box = SelectBox(x, 550, 100, charName)
         canvas.sadd(box)
         selectBoxes.push(box);
+        //Width of the box plus the stroke on both sides
+        x += 110;
 
         let charDisplay = CharDisplay(0, 100, 400, 400, charName);
         canvas.sadd(charDisplay);
@@ -34,7 +36,6 @@ function selectScreen(canvas, ratio) {
         let skillDisplay = SkillDisplay(400, 100, 600, 400, charName);
         canvas.sadd(skillDisplay);
         skillDisplays.push(skillDisplay);
-        x += 100;
     }
 }
 
@@ -46,11 +47,11 @@ function SelectBox(x, y, length, charName){
         stroke: 'gray',
         width: length,
         height: length,
-        strokeWidth: 5
+        strokeWidth: length/20
     });
 
     var offset = 6;
-    var char = charViews[charName](0, 0, length/2-offset);
+    var char = views[charName].Sprite(0, 0, length/2-offset);
     char.set({originY:'center', originX:'center'});
 
     var box = new fabric.Group([square, char], {
@@ -64,53 +65,95 @@ function SelectBox(x, y, length, charName){
 function CharDisplay(x, y, width, height, charName){
     var rect = new fabric.Rect({
         width:width,
-        height:height,
-        stroke: 'black',
+        height: height,
+        stroke: 'white',
+        strokeWidth: 2,
         originX: 'center',
-        originY: 'center',
         fill: ''
     });
-    var name = new fabric.Text(charName, {
+    var name = new fabric.Textbox(charName, {
+        textAlign: 'center',
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         fontSize: 50,
         fill: 'white',
+        top: 20,
         originX: 'center',
-        originY: 'bottom',
-        top:-height*2/7
     });
-    var yoffset = 30;
-    var char = charViews[charName](0, yoffset, height/3);
-    char.set({originY:'center', originX:'center'});
+
+    var char = views[charName].Sprite(0, name.getBoundingRectHeight()+30, height / 3);
+    char.set({ originX: 'center' });
     return new fabric.Group([rect, char, name], {
         left:x,
         top:y,
-        width:width,
-        height:height
     })
 }
 
 function SkillDisplay(x, y, width, height, charName){
     var rect = new fabric.Rect({
-        width:width,
-        height:height,
-        stroke: 'black',
+        width: width,
+        height: height,
+        stroke: 'white',
+        strokeWidth: 2,
         originX: 'center',
-        originY: 'center',
         fill: ''
     });
-    var skillText = new fabric.Text('Skills', {
+
+    var skillText = new fabric.Textbox('Skills', {
+        originX: 'center',
+        textAlign: 'center',
+        top: 20,
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         fontSize: 50,
         fill: 'white'
     });
-    return new fabric.Group([rect, skillText], {
+
+    var group = new fabric.Group([rect, skillText], {
         left:x,
-        top:y,
-        width:width,
-        height:height
+        top: y,
+        originX: 'left',
+        originY: 'top'
     });
+
+    let yoffset = skillText.getBoundingRectHeight() + 40;
+    views[charName].skills.forEach(function (skill, i) {
+        let desc = SkillDesc(0, i * 100, 100, 80, skill);
+        desc.set({originX: 'left', originY: 'top'})
+        group.add(desc);
+    });
+    group.addWithUpdate();
+
+    return group;
+}
+
+//Assumes height < width, since icon will be square of length height
+function SkillDesc(x, y, width, height, skill) {
+    var icon = skill.Icon(0, 0, height);
+
+    var xoffset = height + 30;
+    var title = new fabric.Text(skill.name, {
+        fontFamily: 'sans-serif',
+        fontSize: 30,
+        fill: 'white',
+        left: xoffset,
+        top: 0
+    });
+
+    var description = new fabric.Textbox(skill.description, {
+        fontFamily: 'sans-serif',
+        fontSize: 16,
+        fill: 'white',
+        left: xoffset,
+        top: title.getBoundingRectHeight(),
+        width: width - xoffset,
+        height: height - title.getBoundingRectHeight()
+    });
+
+    return new fabric.Group([icon, title, description], {
+        left: x,
+        top: y
+    })
 }
 
 module.exports = selectScreen;

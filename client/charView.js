@@ -26,4 +26,4 @@ function SlasherView(x, y, radius){
     });
 }
 
-module.exports = {'Slasher': SlasherView};
+module.exports.SlasherView = SlasherView;
