@@ -42,25 +42,24 @@ function init(http){
             }
             else if (channel === 'CreateGame/' + socket.id) {
                 //Creates the game from the given json of character mappings
-                var gameJson = JSON.parse(message);
+                var gameMap = JSON.parse(message);
                 createGame(message)
             }
             else if (channel === 'StartMatch/' + socket.id) {
-                var gameJson = JSON.parse(message);
-                //Modify the gameJson for client use by replacing the socket ids with the terms 'you' and 'opponent'
-                //Also skips over gameId, since that is useless for client
-                var clientJson = Object.keys(gameJson).reduce(function(json, key){
-                    if (key === socket.id) json['you'] = gameJson[key];
-                    else if (key !== 'gameId') {
-                        //Set opponent id for receiving updates
-                        opponent = key;
-                        json['opponent'] = gameJson[key];
+                var gameMap = JSON.parse(message);
+                //Modify the gameMap for client use by replacing the socket ids with the terms 'you' and 'opponent'
+                var clientMap = gameMap.map(function(pair){
+                    let player = pair[0], charName = pair[1];
+                    if (player === socket.id) player = 'you';
+                    else {
+                        opponent = player;
+                        player = 'opponent';
                     }
-                    return json;
-                }, {});
-                socket.emit('startMatch', clientJson);
+                    return [player, charName];
+                });
+                socket.emit('startMatch', clientMap);
             }
-            else if (channel === 'Update/'+opponent){
+            else if (channel === 'Update/' + opponent) {
                 //Should update opponent with game state
                 socket.emit('oUpdate', message);
             }

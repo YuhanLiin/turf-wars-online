@@ -139,12 +139,12 @@ describe('sockets', function(){
             //Count # of start match notifs
             var notifcount = 0;
             socket2.on('startMatch', function(message){
-                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
+                assert.deepStrictEqual(new Map(message),  new Map([['opponent','Slasher'], ['you','Slasher']]));
                 notifcount++;
                 if (notifcount === 2) done()
             });
             socket1.on('startMatch', function(message){
-                assert.deepStrictEqual(message, {you:'Slasher', opponent:'Slasher'});
+                assert.deepStrictEqual(new Map(message),  new Map([['you','Slasher'], ['opponent','Slasher']]));
                 notifcount++;
                 if (notifcount === 2) done()
             });
@@ -201,7 +201,7 @@ describe('sockets', function(){
                     if(count === 2) done();
                 });
                 socket2.on()
-            }, 40);
+            }, 50);
         });
 
         it('should deny malformed inputs', function(done){

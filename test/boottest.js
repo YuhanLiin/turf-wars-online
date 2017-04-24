@@ -29,13 +29,13 @@ describe('serverside game bootstrapper', function(){
 
     it('should create game and update players', function(done){
         //Create game
-        boot(JSON.stringify({gameId:'example', player1:'Slasher', player2:'Slasher'}));
+        boot(JSON.stringify([['player1','Slasher'], ['player2','Slasher'], 'example']));
         //Disable input wait time just for this test so frames will actually increase
         var wait = Game.maxWaitTime;
         Game.maxWaitTime = 0;
-        setTimeout(function(){
-            assert(notifs.includes('StartMatch/'+'player1'+JSON.stringify({player1:'Slasher', player2:'Slasher'})), 'Send notif');
-            assert(notifs.includes('StartMatch/'+'player2'+JSON.stringify({player1:'Slasher', player2:'Slasher'})), 'Send notif');
+        setTimeout(function () {
+            assert(notifs.includes('StartMatch/'+'player1'+JSON.stringify([['player1','Slasher'], ['player2','Slasher']])), 'Send notif');
+            assert(notifs.includes('StartMatch/'+'player2'+JSON.stringify([['player1','Slasher'], ['player2','Slasher']])), 'Send notif');
             assert(game.frameCount >= 1, 'Game should have started');
             //Restore input wait time
             Game.maxWaitTime = wait;

@@ -1,5 +1,5 @@
-//Responsible for input, output, and game loop; characterJson maps playerId to character name; inputJson maps inputManagers to character name
-function Game(characterJson, inputJson){
+//Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
+function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
     game.isDone = false;
     game.frameCount = 0;
@@ -8,12 +8,14 @@ function Game(characterJson, inputJson){
     game.inputs = inputJson;
     //Player either starts top right or bottom left
     var startPositions = [{px: 40, py: 40, dx: 1, dy: 1}, {px: game.width-40, py: game.height-40, dx: -1, dy: -1}]
-    for (let player in characterJson){
+    characterMap.forEach(function (pair) {
+        let player = pair[0];
+        let charName = pair[1];
         //Populates players object
         let args = startPositions.pop();
         //Constructs character models and their positions on the map
-        game.characters[player] = Game.roster[characterJson[player]](game, args.px, args.py, args.dx, args.dy);
-    }
+        game.characters[player] = Game.roster[charName](game, args.px, args.py, args.dx, args.dy);
+    });
     return game;
 }
 

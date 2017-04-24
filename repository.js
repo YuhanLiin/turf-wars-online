@@ -255,9 +255,10 @@ function selectChar(userId, character){
         var trans = pub.multi().hset(userId, 'character', character);
         //If everyone has selected a char, then tell the last user to create the game on its server
         if (allSelected) {
+            //Make list of [user, character] pairs. Append gameId to end
+            var charMappings = room.map((userId, i) =>[userId, chars[i]]);
+            charMappings.push(gameId);
             //Send the mappings and the gameId to the user to create game and set handler for this specific game
-            var charMappings = {'gameId': gameId};
-            room.forEach((userId, i)=>charMappings[userId] = chars[i]);
             return trans.publish('CreateGame/'+userId, JSON.stringify(charMappings)).execAsync();
         }
         return trans.execAsync();

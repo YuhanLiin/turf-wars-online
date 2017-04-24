@@ -36,7 +36,7 @@ describe('Gameobj', function () {
         });
 
         it('should run at the correct framerate', function (done) {
-            var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
+            var game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: input1, player2: input2 });
             game.start();
             setTimeout(function () {
                 assert.strictEqual(game.frameCount, 3);
@@ -64,7 +64,7 @@ describe('Gameobj', function () {
                 inputs2.push(input2);
             }
             for (let i = 0; i < 5; i++) {
-                games.push(Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: inputs1[i], player2: inputs2[i] }));
+                games.push(Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: inputs1[i], player2: inputs2[i] }));
                 games[i].start();
             }
             setTimeout(function () {
@@ -75,7 +75,7 @@ describe('Gameobj', function () {
         });
 
         it('should not continue running after game is done', function(done){
-            var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
+            var game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: input1, player2: input2 });
             game.start;
             game.isDone = true;
             setTimeout(function(){
@@ -89,7 +89,7 @@ describe('Gameobj', function () {
         it('should not update when inputs are delayed', function(done){
             var input1 = Input(), input2 = Input();
             input1.process('000');
-            var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
+            var game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: input1, player2: input2 });
             game.start()
             setTimeout(function(){
                 //Only 1 input available for 1 player, so no frames are run
@@ -109,7 +109,7 @@ describe('Gameobj', function () {
 
         it('should continue normal processing when input delay limit is reached', function(done){
             var input1 = Input(), input2 = Input();
-            var game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: input1, player2: input2 });
+            var game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: input1, player2: input2 });
             game.start()
             setTimeout(function(){
                 assert.strictEqual(game.frameCount, 1);
@@ -122,7 +122,7 @@ describe('Gameobj', function () {
     describe('Simple simulation', function(){
         var game;
         beforeEach('Moving characters near each other', function(){
-            game = Game({ player1: 'Slasher', player2: 'Slasher' }, { player1: Input(), player2: Input() });
+            game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: Input(), player2: Input() });
             endUpdates = [];
             //Move them together horizontally
             for (let i = 0; i < Math.round(300 / 7) ; i++) {
