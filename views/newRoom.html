@@ -5,20 +5,15 @@
     <meta charset="utf-8" />
     <title>Public Room ... Waiting</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.9/fabric.min.js"></script>
 </head>
 <body>
     <h2>{{roomId}}</h2>
+    <canvas id="gameScreen" width="800" height="560"></canvas>
     <script>
-        var socket = io('/room');
         var roomId = "{{roomId}}";
-        socket.emit('roomId', roomId);
-        //Change issue handling later
-        socket.on('issue', function (issue) {
-            console.log(issue);
-        });
-        socket.on('startGame', function () {
-            console.log('startGame');
-        })
     </script>
+    <script src="/js/bundle.js"></script>
 </body>
 </html>

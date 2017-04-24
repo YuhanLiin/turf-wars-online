@@ -23,7 +23,7 @@
             add2Rooms(room);
         }
 
-        var socket = io('/lobby');
+        var socket = io('/lobby',  {transports: ['websocket'], upgrade: false});
         socket.on('add', function(roomId){
             add2Rooms(roomId);
         })

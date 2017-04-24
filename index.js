@@ -10,11 +10,13 @@ var io = require("./sockets").init(http);
 //Allow server to run only after redis is flushed
 repo.flushPromise.then(http.listen(8000));
 
+//Send statuscode
 function sendCode(res, statusCode){
     res.statusCode = statusCode;
     res.end(statusCode.toString()+": Something went wrong");
 }
 
+//Send a file or a 404
 function sendFile(res, filepath, context={}, type="text/html") {
     res.setHeader("content-type", type);
     fs.readFile('.'+filepath, function (err, data) {
@@ -41,6 +43,10 @@ http.on('request', function (req, res) {
     if (req.method === 'GET') {
         if (path === '/') {
             sendFile(res, "/views/index.html");
+        }
+        else if (path.startsWith('/js')){
+            var filename = path.replace('/js', '');
+            sendFile(res, "/static/js"+filename);
         }      
     }
 
@@ -65,7 +71,7 @@ http.on('request', function (req, res) {
             //Get room errors are 500 errors
             .catch(function(err){
                 console.log(err);
-                sendCode(500);
+                sendCode(res, 500);
             });
         }
     }
