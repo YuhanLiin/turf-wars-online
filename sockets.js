@@ -37,36 +37,40 @@ function init(http){
 
         var opponent;
         function pubsubHandler(pattern, channel, message) {
-            if (channel === 'StartGame/' + socket.id) {
-                socket.emit('startGame', message);
-            }
-            else if (channel === 'CreateGame/' + socket.id) {
-                //Creates the game from the given json of character mappings
-                var gameMap = JSON.parse(message);
-                createGame(message)
-            }
-            else if (channel === 'StartMatch/' + socket.id) {
-                var gameMap = JSON.parse(message);
-                //Modify the gameMap for client use by replacing the socket ids with the terms 'you' and 'opponent'
-                var clientMap = gameMap.map(function(pair){
-                    let player = pair[0], charName = pair[1];
-                    if (player === socket.id) player = 'you';
-                    else {
-                        opponent = player;
-                        player = 'opponent';
-                    }
-                    return [player, charName];
-                });
-                socket.emit('startMatch', clientMap);
-            }
-            else if (channel === 'Update/' + opponent) {
-                //Should update opponent with game state
-                socket.emit('oUpdate', message);
-            }
-            else if (channel.startsWith('EndGame/') && channel.endsWith(socket.id)) {
+            if (channel.startsWith('EndGame/') && channel.endsWith(socket.id)) {
                 //Send the middle action portion of the end game channel as event for client
-                var action = channel.replace('EndGame/', '').replace('/'+socket.id, '');
+                var action = channel.replace('EndGame/', '').replace('/' + socket.id, '');
                 socket.emit(action, message);
+            }
+            else {
+                switch (channel) {
+                    case 'StartGame/' + socket.id:
+                        socket.emit('startGame', message);
+                        break;
+                    case 'CreateGame/' + socket.id:
+                        //Creates the game from the given json of character mappings
+                        var gameMap = JSON.parse(message);
+                        createGame(message);
+                        break;
+                    case 'StartMatch/' + socket.id:
+                        var gameMap = JSON.parse(message);
+                        //Modify the gameMap for client use by replacing the socket ids with the terms 'you' and 'opponent'
+                        var clientMap = gameMap.map(function (pair) {
+                            let player = pair[0], charName = pair[1];
+                            if (player === socket.id) player = 'you';
+                            else {
+                                opponent = player;
+                                player = 'opponent';
+                            }
+                            return [player, charName];
+                        });
+                        socket.emit('startMatch', clientMap);
+                        break;
+                    case 'Update/' + opponent:
+                        //Should update opponent with game state
+                        socket.emit('oUpdate', message);
+                        break;
+                }
             }
         }
         repo.sub.on("pmessage", pubsubHandler);
