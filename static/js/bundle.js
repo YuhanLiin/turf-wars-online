@@ -2,15 +2,30 @@
 var charView = require('./charView.js');
 var IconGen = require('./skillIcon.js');
 
+var descriptions = {
+    'Cut': "Quick melee attack that hits right in front of you.",
+    'Dash': "Move a short distance in any of the 8 cardinal directions.",
+    'Dodge': "Evade all attacks for an instant.",
+    'Vortex': "Become invinsible and slice up everything around you for the next 4 seconds."
+}
+
+function skillViewModel(name, charName, description, cooldown){
+    return {
+        name: name,
+        description: description,
+        cooldown: cooldown,
+        Icon: IconGen(charName, name)
+    };
+}
+
 module.exports.Slasher = {
     Sprite: charView.SlasherView,
-    skills: ['Cut', 'Dash', 'Dodge', 'Vortex'].map(function (name) {
-        return {
-            name: name,
-            description: "placeholder",
-            Icon: IconGen('Slasher', name)
-        };
-    })
+    skills: [
+        skillViewModel('Cut', 'Slasher', 'Quick melee attack that hits right in front of you.', '0.5'),
+        skillViewModel('Dash', 'Slasher', 'Move a short distance in any of the 8 cardinal directions.', '2'),
+        skillViewModel('Dodge', 'Slasher', 'Evade all attacks for an instant.', '3.5'),
+        skillViewModel('Vortex', 'Slasher', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
+    ]
 };
 },{"./charView.js":2,"./skillIcon.js":4}],2:[function(require,module,exports){
 function SlasherView(x, y, radius){
@@ -37,7 +52,9 @@ function SlasherView(x, y, radius){
 
     return new fabric.Group([outer, middle, inner], {
         left: x,
-        top: y
+        top: y,
+        originX: 'center',
+        originY: 'center'
     });
 }
 
@@ -45,13 +62,50 @@ module.exports.SlasherView = SlasherView;
 },{}],3:[function(require,module,exports){
 var views = require('./allViews.js');
 
-var selectBoxes = [];
-var charDisplays = [];
-var skillDisplays = [];
-var selected = 0;
-
+//Changes canvas to the select screen
 function selectScreen(canvas) {
-    $('canvas').off('keydown');
+    var selectBoxes = [];
+    var charDisplays = [];
+    var skillDisplays = [];
+    var selected = 0;
+
+    //Adds and renders dynamic content pertaining to selected character
+    function render(){
+        selectBoxes[selected].set('stroke', 'red');
+        canvas.sadd(charDisplays[selected]);
+        canvas.sadd(skillDisplays[selected]);
+        canvas.renderAll();
+    }
+
+    //Removes dynamic content
+    function remove(){
+        selectBoxes[selected].set('stroke', 'gray');
+        canvas.remove(charDisplays[selected]);
+        canvas.remove(skillDisplays[selected]);
+    }
+
+    //Shifts character select to left and right with wrap around
+    function selectLeft(){
+        if (selected === 0) selected = selectBoxes.length-1;
+        else selected -= 1;
+    }
+    function selectRight(){
+        if (selected === selectBoxes.length-1) selected = 0;
+        else selected += 1;
+    }
+
+    //Replace key handler
+    $('*').off('keydown');
+    $('*').keydown(function(e){
+        var key = e.which;
+        if (key === 37 || key === 39){
+            e.preventDefault();
+            remove();
+            if (key === 37) selectLeft();
+            else selectRight();
+            render();
+        }
+    });
 
     canvas.setBackgroundColor('darkblue');
     //Title at top
@@ -68,22 +122,22 @@ function selectScreen(canvas) {
 
     var x = 200;
     for (let charName in views){
-        let box = SelectBox(x, 550, 100, charName)
-        canvas.sadd(box)
+        let box = SelectBox(x, 570, 100, charName)
         selectBoxes.push(box);
-        //Width of the box plus the stroke on both sides
+        canvas.sadd(box);
+        //Increment x by width of the box plus the stroke on both sides
         x += 110;
 
-        let charDisplay = CharDisplay(0, 100, 400, 400, charName);
-        canvas.sadd(charDisplay);
+        let charDisplay = CharDisplay(0, 100, 400, 450, charName);
         charDisplays.push(charDisplay);
 
-        let skillDisplay = SkillDisplay(400, 100, 600, 400, charName);
-        canvas.sadd(skillDisplay);
+        let skillDisplay = SkillDisplay(400, 100, 600, 450, charName);
         skillDisplays.push(skillDisplay);
     }
+    render();
 }
 
+//Positioned around center
 function SelectBox(x, y, length, charName){
     var square = new fabric.Rect({
         originX: 'center',
@@ -126,7 +180,7 @@ function CharDisplay(x, y, width, height, charName){
         originX: 'center',
     });
 
-    var char = views[charName].Sprite(0, name.getBoundingRectHeight()+30, height / 3);
+    var char = views[charName].Sprite(0, name.getBoundingRectHeight()+height/3+35, height / 3);
     char.set({ originX: 'center' });
     return new fabric.Group([rect, char, name], {
         left:x,
@@ -140,36 +194,32 @@ function SkillDisplay(x, y, width, height, charName){
         height: height,
         stroke: 'white',
         strokeWidth: 2,
-        originX: 'center',
+        top: 0,
+        left: 0,
         fill: ''
     });
 
     var skillText = new fabric.Textbox('Skills', {
-        originX: 'center',
         textAlign: 'center',
         top: 20,
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         fontSize: 50,
-        fill: 'white'
+        fill: 'white',
+        width: width
     });
 
-    var group = new fabric.Group([rect, skillText], {
+    var components = [rect, skillText];
+    var yoffset = skillText.getBoundingRectHeight() + 35;
+    views[charName].skills.forEach(function (skill, i) {
+        let desc = SkillDesc(width/8, yoffset+i*height/5, width*3/4, 70, skill);
+        components.push(desc);
+    });
+
+    return new fabric.Group(components, {
         left:x,
         top: y,
-        originX: 'left',
-        originY: 'top'
-    });
-
-    let yoffset = skillText.getBoundingRectHeight() + 40;
-    views[charName].skills.forEach(function (skill, i) {
-        let desc = SkillDesc(0, i * 100, 100, 80, skill);
-        desc.set({originX: 'left', originY: 'top'})
-        group.add(desc);
-    });
-    group.addWithUpdate();
-
-    return group;
+    });;
 }
 
 //Assumes height < width, since icon will be square of length height
@@ -185,6 +235,14 @@ function SkillDesc(x, y, width, height, skill) {
         top: 0
     });
 
+    var cdText = new fabric.Text('cooldown: '+skill.cooldown+' seconds', {
+        fontFamily: 'sans-serif',
+        fontSize: 16,
+        fill: 'white',
+        left: xoffset + title.getBoundingRectWidth() + 30,
+        top: 0
+    })
+
     var description = new fabric.Textbox(skill.description, {
         fontFamily: 'sans-serif',
         fontSize: 16,
@@ -195,9 +253,11 @@ function SkillDesc(x, y, width, height, skill) {
         height: height - title.getBoundingRectHeight()
     });
 
-    return new fabric.Group([icon, title, description], {
+    return new fabric.Group([icon, title, cdText, description], {
         left: x,
-        top: y
+        top: y,
+        width: width,
+        height: height
     })
 }
 
@@ -238,7 +298,7 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
-var canvas = new fabric.Canvas('gameScreen');
+var canvas = new fabric.Canvas('gameScreen', {renderOnAddRemove: false});
 canvas.scale = function(object, scaleX, scaleY){
     object.left = object.left/object.scaleX * scaleX;
     object.top = object.top/object.scaleY * scaleY;

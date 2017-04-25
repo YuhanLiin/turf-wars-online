@@ -22,7 +22,9 @@ function SlasherView(x, y, radius){
 
     return new fabric.Group([outer, middle, inner], {
         left: x,
-        top: y
+        top: y,
+        originX: 'center',
+        originY: 'center'
     });
 }
 

@@ -10,7 +10,7 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
-var canvas = new fabric.Canvas('gameScreen');
+var canvas = new fabric.Canvas('gameScreen', {renderOnAddRemove: false});
 canvas.scale = function(object, scaleX, scaleY){
     object.left = object.left/object.scaleX * scaleX;
     object.top = object.top/object.scaleY * scaleY;
