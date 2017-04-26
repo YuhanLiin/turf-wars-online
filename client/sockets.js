@@ -1,5 +1,6 @@
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
+var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
@@ -15,4 +16,5 @@ socket.on('startGame', function () {
 
 
 selectScreen(canvas, socket);
-gameScreen(canvas, gameScreen);
+gameScreen(canvas, socket);
+loadScreen(canvas, socket, 'Loading');

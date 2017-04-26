@@ -2,6 +2,9 @@
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
+//The ID of the animation interval used by loading screen
+canvas.intervalId = null;
+
 //Scale an object's position and size according to factors
 canvas.sresize = function (object, scaleX, scaleY) {
     object.left = object.left / object.scaleX * scaleX;
@@ -25,6 +28,11 @@ canvas.srenew = function (bgc, onKey) {
     this.setBackgroundColor(bgc);
     $('*').off('keydown');
     $('*').on('keydown', onKey);
+    //Stop current loading screen animation
+    if (this.intervalId) {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+    }
 }
 
 module.exports = canvas;
@@ -35,7 +43,8 @@ var hud = require('./playerHud.js');
 function gameScreen(canvas, socket) {
     //Replace key handler
     canvas.srenew('darkblue', function () { });
-    canvas.sadd(hud.Hud(0, 0, 100, 700, 'You', 'Slasher', 'white'));
+    canvas.sadd(hud.Hud(50, 10, 100, 700, 'You', 'Slasher', 'white', 0, 200));
+    canvas.sadd(hud.Hud(950, 10, 100, 700, 'Other', 'Slasher', 'white', 500, 0));
     canvas.renderAll();
 }
 
@@ -43,6 +52,7 @@ module.exports = gameScreen;
 },{"./playerHud.js":3}],3:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
+//HUD part with player name and character sprite
 function Header(x, y, width, height, playerName, charName, textColor){
     var name = new fabric.Textbox(playerName, {
         textAlign: 'center',
@@ -51,36 +61,69 @@ function Header(x, y, width, height, playerName, charName, textColor){
         top: 10,
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
-        fontSize: 40,
+        fontSize: 36,
         fill: textColor
     });
     var char = views[charName].Sprite(0, height*2 / 3, width / 2 - 5);
     return new fabric.Group([char, name],{
-        left:x, top:y
+        left: x, top: y,
+        originX: 'center', originY: 'top'
     });
 }
 
-function Hud(x, y, width, height, playerName, charName, textColor) {
+//Sidebar HUD that displays the character and skills owned by one player
+//headerStart and iconStart customizes the positions of the player header and skill icons
+function Hud(x, y, width, height, playerName, charName, textColor, headerStart, iconStart) {
     //Put header at top
-    var header = Header(x, y, width, height * 2 / 7, playerName, charName, textColor);
-    header.set('originX', 'center');
+    var header = Header(0, headerStart, width, height * 2 / 7, playerName, charName, textColor);
     //Generate skill icons vertically
-    var yoffset = height * 2 / 7;
     var components = views[charName].skills.map(function (skill) {
-        var icon = skill.Icon(0, yoffset, height / 8);
-        icon.set('originX', 'center');
-        yoffset += height / 6;
+        var icon = skill.Icon(0, iconStart, height / 8);
+        icon.set({originX: 'center', originY: 'top'});
+        iconStart += height / 6;
         return icon;
     });
     components.push(header);
     return new fabric.Group(components, {
         left: x,
-        top: y
+        top: y,
+        originX: 'center',
+        originY: 'top'
     });
 }
 
 module.exports.Hud = Hud;
-},{"../views/allViews.js":8}],4:[function(require,module,exports){
+},{"../views/allViews.js":9}],4:[function(require,module,exports){
+function loadScreen(canvas, socket, text) {
+    canvas.srenew('gray', function () { });
+    //Display input text in middle of screen
+    var txtDisplay = new fabric.Text(text, {
+        fill: 'white',
+        originX: 'center',
+        originY: 'center',
+        textAlign: 'center',
+        fontFamily: 'sans-serif',
+        fontSize: 100,
+        top: 350,
+        left: 460
+    });
+    canvas.sadd(txtDisplay);
+    canvas.renderAll();
+
+    //Number of dots at the end of text, which is incremented
+    var dots = 1;
+    //Animate the text every 100ms
+    canvas.intervalId = setInterval(function () {
+        //Dots loop from 1 to 3
+        if (dots >= 3) dots = 1;
+        else dots++;
+        txtDisplay.setText(text + '.'.repeat(dots));
+        canvas.renderAll();
+    }, 300);
+}
+
+module.exports = loadScreen;
+},{}],5:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -185,7 +228,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":8}],5:[function(require,module,exports){
+},{"../views/allViews.js":9}],6:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -213,7 +256,7 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":8}],6:[function(require,module,exports){
+},{"../views/allViews.js":9}],7:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
@@ -292,9 +335,10 @@ function selectScreen(canvas, socket) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":8,"./dataDisplay.js":4,"./selectBox.js":5}],7:[function(require,module,exports){
+},{"../views/allViews.js":9,"./dataDisplay.js":5,"./selectBox.js":6}],8:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
+var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
@@ -310,8 +354,9 @@ socket.on('startGame', function () {
 
 
 selectScreen(canvas, socket);
-gameScreen(canvas, gameScreen);
-},{"./canvas.js":1,"./gameScreen/gameScreen.js":2,"./selectScreen/selectScreen.js":6}],8:[function(require,module,exports){
+gameScreen(canvas, socket);
+loadScreen(canvas, socket, 'loading');
+},{"./canvas.js":1,"./gameScreen/gameScreen.js":2,"./loadScreen/loadScreen.js":4,"./selectScreen/selectScreen.js":7}],9:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var IconGen = require('./skillIcon.js');
 
@@ -340,7 +385,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
     ]
 };
-},{"./characters/slasherView.js":9,"./skillIcon.js":10}],9:[function(require,module,exports){
+},{"./characters/slasherView.js":10,"./skillIcon.js":11}],10:[function(require,module,exports){
 //Method for syncing view with character state
 function updateMethod(character){
     this.set({left: character.posx, top: character.posy});
@@ -380,7 +425,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 function skillIconGenerator(skillName) {
     return function(x, y, length){
         var square = new fabric.Rect({
@@ -403,4 +448,4 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{}]},{},[7]);
+},{}]},{},[8]);

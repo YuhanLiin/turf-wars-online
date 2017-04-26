@@ -1,6 +1,9 @@
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
+//The ID of the animation interval used by loading screen
+canvas.intervalId = null;
+
 //Scale an object's position and size according to factors
 canvas.sresize = function (object, scaleX, scaleY) {
     object.left = object.left / object.scaleX * scaleX;
@@ -24,6 +27,11 @@ canvas.srenew = function (bgc, onKey) {
     this.setBackgroundColor(bgc);
     $('*').off('keydown');
     $('*').on('keydown', onKey);
+    //Stop current loading screen animation
+    if (this.intervalId) {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+    }
 }
 
 module.exports = canvas;
