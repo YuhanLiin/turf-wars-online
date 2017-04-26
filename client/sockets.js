@@ -1,4 +1,6 @@
 var selectScreen = require('./selectScreen/selectScreen.js');
+var gameScreen = require('./gameScreen/gameScreen.js');
+var canvas = require('./canvas.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -10,18 +12,7 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
-var canvas = new fabric.Canvas('gameScreen', {renderOnAddRemove: false});
-canvas.scale = function(object, scaleX, scaleY){
-    object.left = object.left/object.scaleX * scaleX;
-    object.top = object.top/object.scaleY * scaleY;
-    object.scaleX = scaleX;
-    object.scaleY = scaleY;
-}
-canvas.sadd = function(object){
-    var scaleX = canvas.width / 1000;
-    var scaleY = canvas.height / 700;
-    this.scale(object, scaleX, scaleY);
-    this.add(object);
-}
 
-selectScreen(canvas);
+
+selectScreen(canvas, socket);
+gameScreen(canvas, gameScreen);

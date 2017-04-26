@@ -3,7 +3,7 @@ var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
 
 //Changes canvas to the select screen
-function selectScreen(canvas) {
+function selectScreen(canvas, socket) {
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
@@ -34,9 +34,7 @@ function selectScreen(canvas) {
         else selected += 1;
     }
 
-    //Replace key handler
-    $('*').off('keydown');
-    $('*').keydown(function(e){
+    function keyHandler(e){
         var key = e.which;
         if (key === 37 || key === 39){
             e.preventDefault();
@@ -45,9 +43,9 @@ function selectScreen(canvas) {
             else selectRight();
             render();
         }
-    });
+    }
+    canvas.srenew('darkblue', keyHandler);
 
-    canvas.setBackgroundColor('darkblue');
     //Title at top
     var title = new fabric.Text('Select Your Character', {
         textAlign: 'center',

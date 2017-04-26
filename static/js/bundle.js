@@ -1,4 +1,86 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+//Use this canvas for rest of the game and configure it with methods
+var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
+
+//Scale an object's position and size according to factors
+canvas.sresize = function (object, scaleX, scaleY) {
+    object.left = object.left / object.scaleX * scaleX;
+    object.top = object.top / object.scaleY * scaleY;
+    object.scaleX = scaleX;
+    object.scaleY = scaleY;
+}
+
+//Scale an object according to canvas size then add it
+//Now all entities can be assumed to be on 1000x700 canvas
+canvas.sadd = function (object) {
+    var scaleX = canvas.width / 1000;
+    var scaleY = canvas.height / 700;
+    this.sresize(object, scaleX, scaleY);
+    this.add(object);
+}
+
+//Called whenever a new screen appears
+canvas.srenew = function (bgc, onKey) {
+    this.clear();
+    this.setBackgroundColor(bgc);
+    $('*').off('keydown');
+    $('*').on('keydown', onKey);
+}
+
+module.exports = canvas;
+
+},{}],2:[function(require,module,exports){
+var hud = require('./playerHud.js');
+
+function gameScreen(canvas, socket) {
+    //Replace key handler
+    canvas.srenew('darkblue', function () { });
+    canvas.sadd(hud.Hud(0, 0, 100, 700, 'You', 'Slasher', 'white'));
+    canvas.renderAll();
+}
+
+module.exports = gameScreen;
+},{"./playerHud.js":3}],3:[function(require,module,exports){
+var views = require('../views/allViews.js');
+
+function Header(x, y, width, height, playerName, charName, textColor){
+    var name = new fabric.Textbox(playerName, {
+        textAlign: 'center',
+        originX: 'center',
+        width: width,
+        top: 10,
+        fontFamily: 'sans-serif',
+        fontWeight: 'bold',
+        fontSize: 40,
+        fill: textColor
+    });
+    var char = views[charName].Sprite(0, height*2 / 3, width / 2 - 5);
+    return new fabric.Group([char, name],{
+        left:x, top:y
+    });
+}
+
+function Hud(x, y, width, height, playerName, charName, textColor) {
+    //Put header at top
+    var header = Header(x, y, width, height * 2 / 7, playerName, charName, textColor);
+    header.set('originX', 'center');
+    //Generate skill icons vertically
+    var yoffset = height * 2 / 7;
+    var components = views[charName].skills.map(function (skill) {
+        var icon = skill.Icon(0, yoffset, height / 8);
+        icon.set('originX', 'center');
+        yoffset += height / 6;
+        return icon;
+    });
+    components.push(header);
+    return new fabric.Group(components, {
+        left: x,
+        top: y
+    });
+}
+
+module.exports.Hud = Hud;
+},{"../views/allViews.js":8}],4:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -103,7 +185,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":5}],2:[function(require,module,exports){
+},{"../views/allViews.js":8}],5:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -131,13 +213,13 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":5}],3:[function(require,module,exports){
+},{"../views/allViews.js":8}],6:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
 
 //Changes canvas to the select screen
-function selectScreen(canvas) {
+function selectScreen(canvas, socket) {
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
@@ -168,9 +250,7 @@ function selectScreen(canvas) {
         else selected += 1;
     }
 
-    //Replace key handler
-    $('*').off('keydown');
-    $('*').keydown(function(e){
+    function keyHandler(e){
         var key = e.which;
         if (key === 37 || key === 39){
             e.preventDefault();
@@ -179,9 +259,9 @@ function selectScreen(canvas) {
             else selectRight();
             render();
         }
-    });
+    }
+    canvas.srenew('darkblue', keyHandler);
 
-    canvas.setBackgroundColor('darkblue');
     //Title at top
     var title = new fabric.Text('Select Your Character', {
         textAlign: 'center',
@@ -212,8 +292,10 @@ function selectScreen(canvas) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":5,"./dataDisplay.js":1,"./selectBox.js":2}],4:[function(require,module,exports){
+},{"../views/allViews.js":8,"./dataDisplay.js":4,"./selectBox.js":5}],7:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
+var gameScreen = require('./gameScreen/gameScreen.js');
+var canvas = require('./canvas.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -225,22 +307,11 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
-var canvas = new fabric.Canvas('gameScreen', {renderOnAddRemove: false});
-canvas.scale = function(object, scaleX, scaleY){
-    object.left = object.left/object.scaleX * scaleX;
-    object.top = object.top/object.scaleY * scaleY;
-    object.scaleX = scaleX;
-    object.scaleY = scaleY;
-}
-canvas.sadd = function(object){
-    var scaleX = canvas.width / 1000;
-    var scaleY = canvas.height / 700;
-    this.scale(object, scaleX, scaleY);
-    this.add(object);
-}
 
-selectScreen(canvas);
-},{"./selectScreen/selectScreen.js":3}],5:[function(require,module,exports){
+
+selectScreen(canvas, socket);
+gameScreen(canvas, gameScreen);
+},{"./canvas.js":1,"./gameScreen/gameScreen.js":2,"./selectScreen/selectScreen.js":6}],8:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var IconGen = require('./skillIcon.js');
 
@@ -269,7 +340,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
     ]
 };
-},{"./characters/slasherView.js":6,"./skillIcon.js":7}],6:[function(require,module,exports){
+},{"./characters/slasherView.js":9,"./skillIcon.js":10}],9:[function(require,module,exports){
 //Method for syncing view with character state
 function updateMethod(character){
     this.set({left: character.posx, top: character.posy});
@@ -309,7 +380,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 function skillIconGenerator(skillName) {
     return function(x, y, length){
         var square = new fabric.Rect({
@@ -332,4 +403,4 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{}]},{},[4]);
+},{}]},{},[7]);
