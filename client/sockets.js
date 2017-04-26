@@ -1,4 +1,4 @@
-var selectScreen = require('./selectScreen.js');
+var selectScreen = require('./selectScreen/selectScreen.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);

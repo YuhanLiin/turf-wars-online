@@ -1,3 +1,9 @@
+//Method for syncing view with character state
+function updateMethod(character){
+    this.set({left: character.posx, top: character.posy});
+}
+
+//How Slasher is displayed (3 circles)
 function SlasherView(x, y, radius){
     var outer = new fabric.Circle({
         radius: radius,
@@ -20,12 +26,14 @@ function SlasherView(x, y, radius){
         originY: 'center'
     });
 
-    return new fabric.Group([outer, middle, inner], {
+    var view = new fabric.Group([outer, middle, inner], {
         left: x,
         top: y,
         originX: 'center',
         originY: 'center'
     });
+    view.update = updateMethod;
+    return view;
 }
 
-module.exports.SlasherView = SlasherView;
+module.exports = SlasherView;

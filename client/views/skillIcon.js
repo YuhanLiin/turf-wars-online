@@ -1,4 +1,4 @@
-function skillIconGenerator(charName, skillName) {
+function skillIconGenerator(skillName) {
     return function(x, y, length){
         var square = new fabric.Rect({
             originX: 'center',
