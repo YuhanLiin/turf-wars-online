@@ -95,7 +95,7 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
 module.exports.Hud = Hud;
 },{"../views/allViews.js":9}],4:[function(require,module,exports){
 function loadScreen(canvas, socket, text) {
-    canvas.srenew('gray', function () { });
+    canvas.srenew('lightgray', function () { });
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
         fill: 'white',
@@ -119,7 +119,7 @@ function loadScreen(canvas, socket, text) {
         else dots++;
         txtDisplay.setText(text + '.'.repeat(dots));
         canvas.renderAll();
-    }, 300);
+    }, 500);
 }
 
 module.exports = loadScreen;
@@ -355,7 +355,7 @@ socket.on('startGame', function () {
 
 selectScreen(canvas, socket);
 gameScreen(canvas, socket);
-loadScreen(canvas, socket, 'loading');
+loadScreen(canvas, socket, 'Loading');
 },{"./canvas.js":1,"./gameScreen/gameScreen.js":2,"./loadScreen/loadScreen.js":4,"./selectScreen/selectScreen.js":7}],9:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var IconGen = require('./skillIcon.js');

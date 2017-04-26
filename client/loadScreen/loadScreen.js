@@ -1,5 +1,5 @@
 function loadScreen(canvas, socket, text) {
-    canvas.srenew('gray', function () { });
+    canvas.srenew('lightgray', function () { });
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
         fill: 'white',
@@ -23,7 +23,7 @@ function loadScreen(canvas, socket, text) {
         else dots++;
         txtDisplay.setText(text + '.'.repeat(dots));
         canvas.renderAll();
-    }, 300);
+    }, 500);
 }
 
 module.exports = loadScreen;
