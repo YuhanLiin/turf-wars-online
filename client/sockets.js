@@ -37,4 +37,4 @@ var state = {
 
 selectScreen(state);
 //gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
-//loadScreen(state, 'Loading');
+loadScreen(state, 'Loading');

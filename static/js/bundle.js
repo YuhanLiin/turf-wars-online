@@ -141,8 +141,11 @@ var Game = require('../../game/game.js');
 var playerHudColour = {'you': 'white', 'other': 'red'};
 Game.inject(function(){}, function(){});
 
-function gameScreen(canvas, socket, gameMap) {
-    canvas.srenew('darkblue', function () { });
+function gameScreen(state, gameMap) {
+    state.reset();
+    state.canvas.setBackgroundColor('darkblue');
+    var playerInput = state.playerControls.makeInputManager();
+
     //Player1 gets left HUD
     var leftHud = Hud(50, 10, 100, 700, gameMap[0][0], gameMap[0][1], playerHudColour[gameMap[0][0]], 0, 200);
     //Player2 gets right HUD
@@ -153,10 +156,10 @@ function gameScreen(canvas, socket, gameMap) {
     iconJson[gameMap[1][0]] = rightHud.icons;
 
     //Set up game
-    var inputs = {'you': Input(), 'other': Input()};
+    var inputs = {'you': playerInput, 'other': Input()};
     var game = Game(gameMap, inputs);
-    canvas.saddGroup(Turf(100,0,game, gameMap));
-    canvas.srenderAll();
+    state.canvas.saddGroup(Turf(100,0,game, gameMap));
+    state.canvas.srenderAll();
 }
 
 module.exports = gameScreen;
@@ -285,8 +288,9 @@ function update(){
 
 module.exports = Turf;
 },{"../views/allViews.js":11}],6:[function(require,module,exports){
-function loadScreen(canvas, socket, text) {
-    canvas.srenew('lightgray', function () { });
+function loadScreen(state, text) {
+    state.reset();
+    state.canvas.setBackgroundColor('lightgray');
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
         fill: 'white',
@@ -298,18 +302,18 @@ function loadScreen(canvas, socket, text) {
         top: 350,
         left: 460
     });
-    canvas.sadd(txtDisplay);
-    canvas.renderAll();
+    state.canvas.sadd(txtDisplay);
+    state.canvas.srenderAll();
 
     //Number of dots at the end of text, which is incremented
     var dots = 1;
     //Animate the text every 100ms
-    canvas.intervalId = setInterval(function () {
+    state.canvas.intervalId = setInterval(function () {
         //Dots loop from 1 to 3
         if (dots >= 3) dots = 1;
         else dots++;
         txtDisplay.setText(text + '.'.repeat(dots));
-        canvas.renderAll();
+        state.canvas.renderAll();
     }, 500);
 }
 
@@ -566,7 +570,7 @@ var state = {
 
 selectScreen(state);
 //gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
-//loadScreen(state, 'Loading');
+loadScreen(state, 'Loading');
 },{"./canvas.js":1,"./controls.js":2,"./gameScreen/gameScreen.js":3,"./loadScreen/loadScreen.js":6,"./selectScreen/selectScreen.js":9}],11:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var IconGen = require('./skillIcon.js');
