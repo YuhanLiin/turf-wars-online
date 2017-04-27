@@ -43,7 +43,7 @@ InputRecord.prototype = {
     process(inputCode) {
         var [v, h, s] = this.unpack(inputCode);
         //Validate input
-        if (h === undefined || v === undefined || s === NaN) return;
+        if (h === undefined || v === undefined || s === NaN || s >= 4) return;
         this.set(v, '_vert');
         this.set(h, '_hori');
         this.set(s, '_skill');

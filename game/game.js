@@ -6,7 +6,7 @@ function Game(characterMap, inputJson){
     //Maps players to their characters and input managers
     game.characters = {};
     game.inputs = inputJson;
-    //Player either starts top right or bottom left
+    //Player1 starts top right, player 2 starts bottom left
     var startPositions = [{px: 40, py: 40, dx: 1, dy: 1}, {px: game.width-40, py: game.height-40, dx: -1, dy: -1}]
     characterMap.forEach(function (pair) {
         let player = pair[0];

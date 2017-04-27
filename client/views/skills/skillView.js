@@ -1,13 +1,18 @@
+var bind = require('../bind.js');
+
 //Mixin for all skills
 module.exports = {
-    update(skill){
+    update(){
+        var skill = this.model;
         if (skill.curFrame > 0){
-            this._update(skill);
+            this._update();
         }
         //Automatically turn off nonactive skill views
         else this.setOpacity(0);
     },
 
     //Default empty skill specific update function
-    _update(){}
+    _update(){},
+
+    bind: bind;
 };

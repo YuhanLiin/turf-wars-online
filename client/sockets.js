@@ -15,6 +15,6 @@ socket.on('startGame', function () {
 
 
 
-selectScreen(canvas, socket);
-gameScreen(canvas, socket);
-loadScreen(canvas, socket, 'Loading');
+//selectScreen(canvas, socket);
+gameScreen(canvas, socket, [['you','Slasher'], ['other','Slasher']]);
+//loadScreen(canvas, socket, 'Loading');

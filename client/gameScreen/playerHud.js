@@ -35,9 +35,10 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
     return new fabric.Group(components, {
         left: x,
         top: y,
+        //Positioned by center of x and top of y
         originX: 'center',
         originY: 'top'
     });
 }
 
-module.exports.Hud = Hud;
+module.exports = Hud;

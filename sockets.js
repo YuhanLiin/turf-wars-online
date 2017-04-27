@@ -60,7 +60,7 @@ function init(http){
                             if (player === socket.id) player = 'you';
                             else {
                                 opponent = player;
-                                player = 'opponent';
+                                player = 'other';
                             }
                             return [player, charName];
                         });

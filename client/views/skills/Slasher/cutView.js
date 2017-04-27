@@ -1,7 +1,8 @@
 var skillView = require('../skillView.js')
 
-function update(skill){
-    var atk = skill.attack;
+//Draw out the cut attack as long as it is active
+function update(){
+    var atk = this.model.attack;
     if (atk.curFrame > 0){
         this.set({
             left: atk.posx,

@@ -1,6 +1,9 @@
+var bind = require('../bind.js');
+
 //Method for syncing view with character state
-function updateMethod(character){
-    this.set({left: character.posx, top: character.posy});
+function updateMethod(){
+    this.setLeft(this.model.posx);
+    this.setTop(this.model.posy);
 }
 
 //How Slasher is displayed (3 circles)
@@ -33,6 +36,7 @@ function SlasherView(x, y, radius){
         originY: 'center'
     });
     view.update = updateMethod;
+    view.bind = bind;
     return view;
 }
 

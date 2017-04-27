@@ -31,6 +31,8 @@ describe('InputRecord', function(){
     it('should reject invalid inputs', function () {
         input.process('n4k');
         assert.deepStrictEqual(input.get(), [undefined, undefined, undefined]);
+        input.process('114');
+        assert.deepStrictEqual(input.get(), [undefined, undefined, undefined]);
     });
 
     it('should numbers back into input code', function () {
