@@ -33,6 +33,7 @@ InputRecord.prototype = {
         return this._vert.isEmpty();
     },
 
+    //Wipe out input buffer when dumping frames
     clear(){
         this._vert.clear();
         this._hori.clear();

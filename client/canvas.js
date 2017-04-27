@@ -46,13 +46,13 @@ canvas.srenderAll = function (realGroup, resetOpt = true) {
     if (resetOpt) this.realGroups.forEach(group=>group.resetAll());
 }
 
-//Called whenever a new screen appears. Clears screen
+//Called whenever a new screen appears. Clears screen and key handlers
 canvas.srenew = function (bgc, onKey) {
     this.clear();
     this.realGroups = [];
     this.setBackgroundColor(bgc);
-    $('*').off('keydown');
-    $('*').on('keydown', onKey);
+    $('body').off('keydown');
+    $('body').off('keyup');
     //Stop current loading screen animation
     if (this.intervalId) {
         clearInterval(this.intervalId);

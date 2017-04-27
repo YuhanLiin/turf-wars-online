@@ -29,7 +29,7 @@ RealGroup.prototype = {
     }
 }
 
-//Assumed to be same size as game board
+//Assumed to be same size as game board. Components all have bindings to game entities and will update when drawn
 function Turf(x, y, game, gameMap) {
     var turf = new fabric.Rect({
         left: 0,
@@ -56,6 +56,7 @@ function Turf(x, y, game, gameMap) {
     return group; 
 }
 
+//Call update on all components other than the green backdrop
 function update(){
     var self = this;
     this.components.forEach(function(view, i){

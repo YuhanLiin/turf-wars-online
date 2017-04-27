@@ -44,7 +44,7 @@ function selectScreen(canvas, socket) {
             render();
         }
     }
-    canvas.srenew('darkblue', keyHandler);
+    canvas.srenew('darkblue');
 
     //Title at top
     var title = new fabric.Text('Select Your Character', {
