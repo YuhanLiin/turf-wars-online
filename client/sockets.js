@@ -2,6 +2,7 @@ var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
+var Controls = require('./controls.js')
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -13,8 +14,27 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
+//State accessed by each screen
+var state = {
+    canvas: canvas, 
+    socket: socket, 
+    playerControls: Controls(),
+    //The ID of the animation interval used by loading screen
+    intervalId: null,
+    reset() {
+        this.canvas.clear();
+        this.canvas.realGroups = [];
+        //Clear key events
+        $('body').off('keydown');
+        $('body').off('keyup');
+        //Stop current loading screen animation
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    }
+}
 
-
-//selectScreen(canvas, socket);
-gameScreen(canvas, socket, [['you','Slasher'], ['other','Slasher']]);
-//loadScreen(canvas, socket, 'Loading');
+selectScreen(state);
+//gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
+//loadScreen(state, 'Loading');

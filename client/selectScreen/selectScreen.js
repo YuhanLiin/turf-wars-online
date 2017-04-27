@@ -2,8 +2,8 @@ var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
 
-//Changes canvas to the select screen
-function selectScreen(canvas, socket) {
+//Changes state.canvas to the select screen
+function selectScreen(state) {
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
@@ -12,16 +12,16 @@ function selectScreen(canvas, socket) {
     //Adds and renders dynamic content pertaining to selected character
     function render(){
         selectBoxes[selected].set('stroke', 'red');
-        canvas.sadd(charDisplays[selected]);
-        canvas.sadd(skillDisplays[selected]);
-        canvas.renderAll();
+        state.canvas.sadd(charDisplays[selected]);
+        state.canvas.sadd(skillDisplays[selected]);
+        state.canvas.srenderAll();
     }
 
     //Removes dynamic content
     function remove(){
         selectBoxes[selected].set('stroke', 'gray');
-        canvas.remove(charDisplays[selected]);
-        canvas.remove(skillDisplays[selected]);
+        state.canvas.remove(charDisplays[selected]);
+        state.canvas.remove(skillDisplays[selected]);
     }
 
     //Shifts character select to left and right with wrap around
@@ -34,17 +34,17 @@ function selectScreen(canvas, socket) {
         else selected += 1;
     }
 
-    function keyHandler(e){
-        var key = e.which;
-        if (key === 37 || key === 39){
-            e.preventDefault();
+    
+    state.reset();
+    state.canvas.setBackgroundColor('darkblue');
+    state.playerControls.registerHandler('up', function(input) {
+        if (input === 'l' || input === 'r') {
             remove();
-            if (key === 37) selectLeft();
+            if (input === 'l') selectLeft();
             else selectRight();
             render();
         }
-    }
-    canvas.srenew('darkblue');
+    })
 
     //Title at top
     var title = new fabric.Text('Select Your Character', {
@@ -55,14 +55,14 @@ function selectScreen(canvas, socket) {
         fill: 'white',
         top: 20
     })
-    canvas.sadd(title);
+    state.canvas.sadd(title);
     title.centerH();
 
     var x = 200;
     for (let charName in views){
         let box = SelectBox(x, 570, 100, charName)
         selectBoxes.push(box);
-        canvas.sadd(box);
+        state.canvas.sadd(box);
         //Increment x by width of the box plus the stroke on both sides
         x += 110;
 

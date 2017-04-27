@@ -2,8 +2,6 @@
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
-//The ID of the animation interval used by loading screen
-canvas.intervalId = null;
 canvas.realGroups = [];
 
 //Scale an object's position and size according to factors
@@ -47,23 +45,94 @@ canvas.srenderAll = function (realGroup, resetOpt = true) {
     if (resetOpt) this.realGroups.forEach(group=>group.resetAll());
 }
 
-//Called whenever a new screen appears. Clears screen
-canvas.srenew = function (bgc, onKey) {
-    this.clear();
-    this.realGroups = [];
-    this.setBackgroundColor(bgc);
-    $('*').off('keydown');
-    $('*').on('keydown', onKey);
-    //Stop current loading screen animation
-    if (this.intervalId) {
-        clearInterval(this.intervalId);
-        this.intervalId = null;
-    }
-}
-
 module.exports = canvas;
 
 },{}],2:[function(require,module,exports){
+function KeyInput() {
+    var manager = Object.create(KeyInput.prototype);  
+    manager._vert = 0;
+    manager._hori = 0;
+    manager._skill = 0;
+    return manager;
+}
+
+KeyInput.prototype = {
+    _downHandler(input) {
+        switch (input) {
+            case 'u':
+                this._vert = -1;
+                break;
+            case 'd':
+                this._vert = 1;
+                break;
+            case 'l':
+                this._hori = -1;
+                break;
+            case 'r':
+                this._hori = -1;
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+                this._skill = input;
+                break;
+        }
+    },
+
+    _upHandler (input) {
+        switch (input) {
+            case 'u':
+            case 'd':
+                this._vert = 0;
+                break;
+            case 'l':
+            case 'r':
+                this._vert = 0;
+                break;
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+                this._skill = 0;
+                break;
+        }
+    },
+
+    isEmpty() {
+        return false;
+    },
+
+    get() {
+        return [this._vert, this._hori, this._skill];
+    },
+
+    clear() {}
+}
+
+function Controls() {
+    //Maps keydown keycodes to the type of input. Defaults to WASD for UDLR and JKL; for the 4 skills
+    var keyMap = { '87': 'u', '83': 'd', '65': 'l', '68': 'r', '74': 1, '75': 2, '76': 3, '186': 4, '13': 'enter' };
+    return {
+        registerHandler(type, inputHandler) {
+            $('body').on('key'+type, function (e) {
+                e.preventDefault();
+                var input = keyMap[e.which.toString()];
+                return inputHandler(input);
+            });
+        },
+        makeInputManager() {
+            var manager = KeyInput();
+            this.registerHandler('down', manager._downHandler);
+            this.registerHandler('up', manager._upHandler);
+            return manager;
+        }
+    };
+}
+
+module.exports = Controls;
+
+},{}],3:[function(require,module,exports){
 var Hud = require('./playerHud.js');
 var Turf = require('./turf.js');
 var Input = require('../../game/input.js');
@@ -91,7 +160,7 @@ function gameScreen(canvas, socket, gameMap) {
 }
 
 module.exports = gameScreen;
-},{"../../game/game.js":16,"../../game/input.js":18,"./playerHud.js":3,"./turf.js":4}],3:[function(require,module,exports){
+},{"../../game/game.js":17,"../../game/input.js":19,"./playerHud.js":4,"./turf.js":5}],4:[function(require,module,exports){
 var views = require('../views/allViews.js');
 var capitalize = fabric.util.string.capitalize;
 
@@ -145,7 +214,7 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
 }
 
 module.exports = Hud;
-},{"../views/allViews.js":10}],4:[function(require,module,exports){
+},{"../views/allViews.js":11}],5:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Fabricjs groups make no sense, so i use this instead
@@ -177,7 +246,7 @@ RealGroup.prototype = {
     }
 }
 
-//Assumed to be same size as game board
+//Assumed to be same size as game board. Components all have bindings to game entities and will update when drawn
 function Turf(x, y, game, gameMap) {
     var turf = new fabric.Rect({
         left: 0,
@@ -204,6 +273,7 @@ function Turf(x, y, game, gameMap) {
     return group; 
 }
 
+//Call update on all components other than the green backdrop
 function update(){
     var self = this;
     this.components.forEach(function(view, i){
@@ -214,7 +284,7 @@ function update(){
 }
 
 module.exports = Turf;
-},{"../views/allViews.js":10}],5:[function(require,module,exports){
+},{"../views/allViews.js":11}],6:[function(require,module,exports){
 function loadScreen(canvas, socket, text) {
     canvas.srenew('lightgray', function () { });
     //Display input text in middle of screen
@@ -244,7 +314,7 @@ function loadScreen(canvas, socket, text) {
 }
 
 module.exports = loadScreen;
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -349,7 +419,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":10}],7:[function(require,module,exports){
+},{"../views/allViews.js":11}],8:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -377,13 +447,13 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":10}],8:[function(require,module,exports){
+},{"../views/allViews.js":11}],9:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
 
-//Changes canvas to the select screen
-function selectScreen(canvas, socket) {
+//Changes state.canvas to the select screen
+function selectScreen(state) {
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
@@ -392,16 +462,16 @@ function selectScreen(canvas, socket) {
     //Adds and renders dynamic content pertaining to selected character
     function render(){
         selectBoxes[selected].set('stroke', 'red');
-        canvas.sadd(charDisplays[selected]);
-        canvas.sadd(skillDisplays[selected]);
-        canvas.renderAll();
+        state.canvas.sadd(charDisplays[selected]);
+        state.canvas.sadd(skillDisplays[selected]);
+        state.canvas.srenderAll();
     }
 
     //Removes dynamic content
     function remove(){
         selectBoxes[selected].set('stroke', 'gray');
-        canvas.remove(charDisplays[selected]);
-        canvas.remove(skillDisplays[selected]);
+        state.canvas.remove(charDisplays[selected]);
+        state.canvas.remove(skillDisplays[selected]);
     }
 
     //Shifts character select to left and right with wrap around
@@ -414,17 +484,17 @@ function selectScreen(canvas, socket) {
         else selected += 1;
     }
 
-    function keyHandler(e){
-        var key = e.which;
-        if (key === 37 || key === 39){
-            e.preventDefault();
+    
+    state.reset();
+    state.canvas.setBackgroundColor('darkblue');
+    state.playerControls.registerHandler('up', function(input) {
+        if (input === 'l' || input === 'r') {
             remove();
-            if (key === 37) selectLeft();
+            if (input === 'l') selectLeft();
             else selectRight();
             render();
         }
-    }
-    canvas.srenew('darkblue', keyHandler);
+    })
 
     //Title at top
     var title = new fabric.Text('Select Your Character', {
@@ -435,14 +505,14 @@ function selectScreen(canvas, socket) {
         fill: 'white',
         top: 20
     })
-    canvas.sadd(title);
+    state.canvas.sadd(title);
     title.centerH();
 
     var x = 200;
     for (let charName in views){
         let box = SelectBox(x, 570, 100, charName)
         selectBoxes.push(box);
-        canvas.sadd(box);
+        state.canvas.sadd(box);
         //Increment x by width of the box plus the stroke on both sides
         x += 110;
 
@@ -456,11 +526,12 @@ function selectScreen(canvas, socket) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":10,"./dataDisplay.js":6,"./selectBox.js":7}],9:[function(require,module,exports){
+},{"../views/allViews.js":11,"./dataDisplay.js":7,"./selectBox.js":8}],10:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
+var Controls = require('./controls.js')
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -472,12 +543,31 @@ socket.on('startGame', function () {
     console.log('startGame');
 });
 
+//State accessed by each screen
+var state = {
+    canvas: canvas, 
+    socket: socket, 
+    playerControls: Controls(),
+    //The ID of the animation interval used by loading screen
+    intervalId: null,
+    reset() {
+        this.canvas.clear();
+        this.canvas.realGroups = [];
+        //Clear key events
+        $('body').off('keydown');
+        $('body').off('keyup');
+        //Stop current loading screen animation
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    }
+}
 
-
-//selectScreen(canvas, socket);
-gameScreen(canvas, socket, [['you','Slasher'], ['other','Slasher']]);
-//loadScreen(canvas, socket, 'Loading');
-},{"./canvas.js":1,"./gameScreen/gameScreen.js":2,"./loadScreen/loadScreen.js":5,"./selectScreen/selectScreen.js":8}],10:[function(require,module,exports){
+selectScreen(state);
+//gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
+//loadScreen(state, 'Loading');
+},{"./canvas.js":1,"./controls.js":2,"./gameScreen/gameScreen.js":3,"./loadScreen/loadScreen.js":6,"./selectScreen/selectScreen.js":9}],11:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var IconGen = require('./skillIcon.js');
 
@@ -506,7 +596,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
     ]
 };
-},{"./characters/slasherView.js":12,"./skillIcon.js":13}],11:[function(require,module,exports){
+},{"./characters/slasherView.js":13,"./skillIcon.js":14}],12:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -514,7 +604,7 @@ module.exports = function(model){
     //Allow call chaining
     return this;
 }
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Method for syncing view with character state
@@ -558,7 +648,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{"../bind.js":11}],13:[function(require,module,exports){
+},{"../bind.js":12}],14:[function(require,module,exports){
 var bind = require('./bind.js');
 
 //Change height of filter based on how much of the cooldown has passed
@@ -624,7 +714,7 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{"./bind.js":11}],14:[function(require,module,exports){
+},{"./bind.js":12}],15:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -720,7 +810,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -736,7 +826,7 @@ function Slasher(...args) {
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":19,"../skills/Slasher/dash.js":20,"../skills/Slasher/dodge.js":21,"../skills/Slasher/vortex.js":22,"./character.js":14}],16:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":20,"../skills/Slasher/dash.js":21,"../skills/Slasher/dodge.js":22,"../skills/Slasher/vortex.js":23,"./character.js":15}],17:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -886,7 +976,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":15}],17:[function(require,module,exports){
+},{"./characters/slasher.js":16}],18:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -962,7 +1052,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -998,6 +1088,7 @@ InputRecord.prototype = {
         return this._vert.isEmpty();
     },
 
+    //Wipe out input buffer when dumping frames
     clear(){
         this._vert.clear();
         this._hori.clear();
@@ -1031,7 +1122,7 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":24}],19:[function(require,module,exports){
+},{"denque":25}],20:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1073,7 +1164,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":17,"../skill.js":23}],20:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],21:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1105,7 +1196,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":17,"../skill.js":23}],21:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],22:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1129,7 +1220,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":17,"../skill.js":23}],22:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],23:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1162,7 +1253,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":17,"../skill.js":23}],23:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],24:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1214,7 +1305,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1468,4 +1559,4 @@ Denque.prototype._shrinkArray = function _shrinkArray() {
 
 module.exports = Denque;
 
-},{}]},{},[9]);
+},{}]},{},[10]);

@@ -1,6 +1,5 @@
 function KeyInput() {
-    var manager = Object.create(KeyInput.prototype);
-    
+    var manager = Object.create(KeyInput.prototype);  
     manager._vert = 0;
     manager._hori = 0;
     manager._skill = 0;
@@ -66,15 +65,16 @@ function Controls() {
     var keyMap = { '87': 'u', '83': 'd', '65': 'l', '68': 'r', '74': 1, '75': 2, '76': 3, '186': 4, '13': 'enter' };
     return {
         registerHandler(type, inputHandler) {
-            $('body').on(type, function (e) {
+            $('body').on('key'+type, function (e) {
+                e.preventDefault();
                 var input = keyMap[e.which.toString()];
                 return inputHandler(input);
             });
         },
         makeInputManager() {
             var manager = KeyInput();
-            this.registerHandler('keydown', manager._downHandler);
-            this.registerHandler('keyup', manager._upHandler);
+            this.registerHandler('down', manager._downHandler);
+            this.registerHandler('up', manager._upHandler);
             return manager;
         }
     };
