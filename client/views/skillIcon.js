@@ -1,14 +1,21 @@
 function skillIconGenerator(skillName) {
-    return function(x, y, length){
-        //Icon background and border
+    return function (x, y, length) {
+        var border = new fabric.Rect({
+            originX: 'center',
+            originY: 'center',
+            fill: 'orange',
+            width: length * 6 / 5,
+            height: length * 6 /5
+        })
+        //Icon background
         var square = new fabric.Rect({
             originX: 'center',
             originY: 'center',
             fill: 'gray',
-            stroke: 'orange',
+            //stroke: 'orange',
             width: length,
             height: length,
-            strokeWidth: length/10
+            //strokeWidth: length/10
         });
 
         //First letter of skill name in center of icon
@@ -21,9 +28,11 @@ function skillIconGenerator(skillName) {
         })
 
         //Load image??
-        return new fabric.Group([square, letter], {
+        return new fabric.Group([border, square, letter], {
             left: x,
-            top: y
+            top: y,
+            width: length,
+            height: length
         });
     }
 }

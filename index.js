@@ -47,7 +47,10 @@ http.on('request', function (req, res) {
         else if (path.startsWith('/js')){
             var filename = path.replace('/js', '');
             sendFile(res, "/static/js"+filename);
-        }      
+        }  
+        else if (!path.startsWith('/socket.io')){
+            sendCode(res, 404)
+        }
     }
 
     else if (req.method === 'POST') {
@@ -73,6 +76,9 @@ http.on('request', function (req, res) {
                 console.log(err);
                 sendCode(res, 500);
             });
+        }
+        else{
+            sendCode(res, 404);
         }
     }
 

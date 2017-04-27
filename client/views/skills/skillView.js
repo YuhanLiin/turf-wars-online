@@ -14,5 +14,5 @@ module.exports = {
     //Default empty skill specific update function
     _update(){},
 
-    bind: bind;
+    bind: bind
 };

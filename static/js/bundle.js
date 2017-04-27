@@ -86,8 +86,9 @@ function gameScreen(canvas, socket, gameMap) {
 }
 
 module.exports = gameScreen;
-},{"../../game/game.js":16,"../../game/input.js":18,"./playerHud.js":3,"./turf.js":4}],3:[function(require,module,exports){
+},{"../../game/game.js":17,"../../game/input.js":19,"./playerHud.js":3,"./turf.js":4}],3:[function(require,module,exports){
 var views = require('../views/allViews.js');
+var CooldownFilter = require('../views/cooldownFilter.js')
 var capitalize = fabric.util.string.capitalize;
 
 //HUD part with player name and character sprite
@@ -114,25 +115,35 @@ function Header(x, y, width, height, playerName, charName, textColor){
 function Hud(x, y, width, height, playerName, charName, textColor, headerStart, iconStart) {
     //Put header at top
     var header = Header(0, headerStart, width, height * 2 / 7, playerName, charName, textColor);
-    //Generate skill icons vertically
-    var components = views[charName].skills.map(function (skill) {
-        var icon = skill.Icon(0, iconStart, height / 8);
-        icon.set({originX: 'center', originY: 'top'});
+    //Arrays for cooldown filters as well as group components
+    var cdFilters = [], components = [];
+    //Generate skill icons vertically along with their filters
+    views[charName].skills.map(function (skill) {
+        var icon = skill.Icon(0, iconStart, height / 9);
+        icon.set({ originX: 'center', originY: 'top' });
+
+        var filter = CooldownFilter(icon);
+        cdFilters.push(filter);
+
+        components.push(icon, filter);
         iconStart += height / 6;
         return icon;
     });
     components.push(header);
-    return new fabric.Group(components, {
+    var group = new fabric.Group(components, {
         left: x,
         top: y,
         //Positioned by center of x and top of y
         originX: 'center',
-        originY: 'top'
+        originY: 'top',
+        height: height
     });
+    group.cdFilters = cdFilters;
+    return group;
 }
 
 module.exports = Hud;
-},{"../views/allViews.js":10}],4:[function(require,module,exports){
+},{"../views/allViews.js":10,"../views/cooldownFilter.js":13}],4:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Fabricjs groups make no sense, so i use this instead
@@ -493,7 +504,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
     ]
 };
-},{"./characters/slasherView.js":12,"./skillIcon.js":13}],11:[function(require,module,exports){
+},{"./characters/slasherView.js":12,"./skillIcon.js":14}],11:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -546,17 +557,54 @@ function SlasherView(x, y, radius){
 
 module.exports = SlasherView;
 },{"../bind.js":11}],13:[function(require,module,exports){
+var bind = require('./bind.js');
+
+//Change height of filter based on how much of the cooldown has passed
+function update() {
+    var skill = this.model;
+    var ratio = skill.curCooldown / skill.cooldown;
+    this.set('height', ratio*this.maxHeight);
+}
+
+//Return a filter to be placed on top of a specific icon and bound to a skill instance
+function CooldownFilter(icon) {
+    var filter = new fabric.Rect({
+        originX: 'center',
+        originY: 'bottom',
+        left: icon.left,
+        top: icon.top + icon.height,
+        width: icon.width,
+        height: 0,
+        fill: 'lightblue',
+        opacity: 0.7
+    });
+    filter.maxHeight = icon.height;
+    filter.bind = bind;
+    filter.update = update;
+    filter.model = null;
+    return filter;
+}
+
+module.exports = CooldownFilter;
+},{"./bind.js":11}],14:[function(require,module,exports){
 function skillIconGenerator(skillName) {
-    return function(x, y, length){
-        //Icon background and border
+    return function (x, y, length) {
+        var border = new fabric.Rect({
+            originX: 'center',
+            originY: 'center',
+            fill: 'orange',
+            width: length * 6 / 5,
+            height: length * 6 /5
+        })
+        //Icon background
         var square = new fabric.Rect({
             originX: 'center',
             originY: 'center',
             fill: 'gray',
-            stroke: 'orange',
+            //stroke: 'orange',
             width: length,
             height: length,
-            strokeWidth: length/10
+            //strokeWidth: length/10
         });
 
         //First letter of skill name in center of icon
@@ -569,16 +617,18 @@ function skillIconGenerator(skillName) {
         })
 
         //Load image??
-        return new fabric.Group([square, letter], {
+        return new fabric.Group([border, square, letter], {
             left: x,
-            top: y
+            top: y,
+            width: length,
+            height: length
         });
     }
 }
 
 module.exports = skillIconGenerator;
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -674,7 +724,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -690,7 +740,7 @@ function Slasher(...args) {
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":19,"../skills/Slasher/dash.js":20,"../skills/Slasher/dodge.js":21,"../skills/Slasher/vortex.js":22,"./character.js":14}],16:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":20,"../skills/Slasher/dash.js":21,"../skills/Slasher/dodge.js":22,"../skills/Slasher/vortex.js":23,"./character.js":15}],17:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -840,7 +890,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":15}],17:[function(require,module,exports){
+},{"./characters/slasher.js":16}],18:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -916,7 +966,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -985,7 +1035,7 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":24}],19:[function(require,module,exports){
+},{"denque":25}],20:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1027,7 +1077,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":17,"../skill.js":23}],20:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],21:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1059,7 +1109,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":17,"../skill.js":23}],21:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],22:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1083,7 +1133,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":17,"../skill.js":23}],22:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],23:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1116,7 +1166,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":17,"../skill.js":23}],23:[function(require,module,exports){
+},{"../../hitbox.js":18,"../skill.js":24}],24:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1168,7 +1218,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 'use strict';
 
 /**
