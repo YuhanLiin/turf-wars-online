@@ -1,26 +1,33 @@
 var views = require('../views/allViews.js');
 
-var RealGroup = fabric.util.createClass(fabric.Object, {
-    initialize(components, options){
-        this.callSuper('initialize', options);
-        this._components = components;
+//Fabricjs groups make no sense, so i use this instead
+function RealGroup(components, x, y){
+    var group = Object.create(RealGroup.prototype);
+    group.left = x;
+    group.top = y;
+    group.components = components;
+    return group;
+}
+
+RealGroup.prototype = {
+    add(item){
+        this.components.push(item);
     },
-    getObjects(){
-        return this._components;
-    },
-    render(ctx, noTrans){
-        this._transformDone = true;
-        this.callSuper('render', ctx)
-        this._components.forEach(function(item){
-            var x = item.left, y = item.top, sx = item.scaleX, sy = item.scaleY;
-            item.set({left: x+this.left, top: y+this.top, scaleX: sx*this.scaleX, scaleY: sy*this.scaleY});
-            console.log(item)
-            item.render(ctx);
-            //item.set({left: x, top: y, scaleY: sy, scaleX: sx});
+    //Apply realGroup offsets
+    offsetAll(){
+        var self = this;
+        this.components.forEach(function(item){
+            item.set({left: item.left+self.left, top: item.top+self.top});
         });
-        this._transformDone = false;
+    },
+    //Reset all component positions to original and also set scale back to 1 for correct resizing
+    resetAll(){
+        var self = this;
+        this.components.forEach(function(item){
+            item.set({left: item.left-self.left, top: item.top-self.top, scaleX:1, scaleY:1});
+        })
     }
-});
+}
 
 //Assumed to be same size as game board
 function Turf(x, y, game, gameMap) {
@@ -43,12 +50,7 @@ function Turf(x, y, game, gameMap) {
         //Do this later
     });
 
-    var group = new RealGroup(components, {
-        left: x, top: y, 
-        originX: 'left', originY: 'top',
-        width: game.width,
-        height: game.height
-    });
+    var group = RealGroup(components, x, y);
     group.update = update;
     group.update();
     return group; 
@@ -56,7 +58,7 @@ function Turf(x, y, game, gameMap) {
 
 function update(){
     var self = this;
-    this.getObjects().forEach(function(view, i){
+    this.components.forEach(function(view, i){
         if (i !== 0){
             view.update();
         }

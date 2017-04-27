@@ -3,6 +3,7 @@ var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
 //The ID of the animation interval used by loading screen
 canvas.intervalId = null;
+canvas.realGroups = [];
 
 //Scale an object's position and size according to factors
 canvas.sresize = function (object, scaleX, scaleY) {
@@ -12,18 +13,43 @@ canvas.sresize = function (object, scaleX, scaleY) {
     object.scaleY = scaleY;
 }
 
-//Scale an object according to canvas size then add it
+//Scale all current objects
 //Now all entities can be assumed to be on 1000x700 canvas
-canvas.sadd = function (object) {
+canvas.sresizeAll = function (){
     var scaleX = canvas.width / 1000;
     var scaleY = canvas.height / 700;
-    this.sresize(object, scaleX, scaleY);
+    var self = this;
+    self.getObjects().forEach(function(item){
+        self.sresize(item, scaleX, scaleY);
+    });
+}
+
+canvas.sadd = function (object) {
     this.add(object);
 }
 
-//Called whenever a new screen appears
+//Add all entities in a real group
+canvas.saddGroup = function (realGroup) {
+    var self = this;
+    realGroup.components.forEach(item=>self.sadd(item));
+    this.realGroups.push(realGroup);
+}
+
+//Render all entities with realgroup offsets in mind. Reset after render is optional
+canvas.srenderAll = function (realGroup, resetOpt = true) {
+    //Apply realGroup offsets
+    this.realGroups.forEach(group=>group.offsetAll());
+    //Apply canvas scale resize
+    this.sresizeAll();
+    this.renderAll();
+    //Reset the realGroup entities to original position
+    if (resetOpt) this.realGroups.forEach(group=>group.resetAll());
+}
+
+//Called whenever a new screen appears. Clears screen
 canvas.srenew = function (bgc, onKey) {
     this.clear();
+    this.realGroups = [];
     this.setBackgroundColor(bgc);
     $('*').off('keydown');
     $('*').on('keydown', onKey);

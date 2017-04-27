@@ -15,8 +15,8 @@ function gameScreen(canvas, socket, gameMap) {
     //Set up game
     var inputs = {'you': Input(), 'other': Input()};
     var game = Game(gameMap, inputs);
-    canvas.sadd(Turf(100,0,game, gameMap));
-    canvas.renderAll();
+    canvas.saddGroup(Turf(100,0,game, gameMap));
+    canvas.srenderAll();
 }
 
 module.exports = gameScreen;

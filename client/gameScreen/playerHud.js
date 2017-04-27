@@ -1,8 +1,9 @@
 var views = require('../views/allViews.js');
+var capitalize = fabric.util.string.capitalize;
 
 //HUD part with player name and character sprite
 function Header(x, y, width, height, playerName, charName, textColor){
-    var name = new fabric.Textbox(playerName, {
+    var name = new fabric.Textbox(capitalize(playerName), {
         textAlign: 'center',
         originX: 'center',
         width: width,
