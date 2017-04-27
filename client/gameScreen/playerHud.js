@@ -1,5 +1,4 @@
 var views = require('../views/allViews.js');
-var CooldownFilter = require('../views/cooldownFilter.js')
 var capitalize = fabric.util.string.capitalize;
 
 //HUD part with player name and character sprite
@@ -27,16 +26,14 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
     //Put header at top
     var header = Header(0, headerStart, width, height * 2 / 7, playerName, charName, textColor);
     //Arrays for cooldown filters as well as group components
-    var cdFilters = [], components = [];
+    var icons = [], components = [];
     //Generate skill icons vertically along with their filters
     views[charName].skills.map(function (skill) {
         var icon = skill.Icon(0, iconStart, height / 9);
         icon.set({ originX: 'center', originY: 'top' });
 
-        var filter = CooldownFilter(icon);
-        cdFilters.push(filter);
-
-        components.push(icon, filter);
+        components.push(icon);
+        icons.push(icon);
         iconStart += height / 6;
         return icon;
     });
@@ -49,7 +46,7 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
         originY: 'top',
         height: height
     });
-    group.cdFilters = cdFilters;
+    group.icons = icons;
     return group;
 }
 
