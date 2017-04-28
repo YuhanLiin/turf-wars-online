@@ -6,7 +6,7 @@ var playerHudColour = { 'you': 'white', 'other': 'red' };
 function gameScreen(state, game) {
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
-    huds = [];
+    var huds = [];
     for (let player in game.characters) {
         let char = game.characters[player];
         if (char.posx < 350) {
@@ -17,11 +17,15 @@ function gameScreen(state, game) {
         }
     }
     
+    var turf = Turf(100, 0, game);
     //Add groups to canvas
-    state.canvas.saddGroup(Turf(100, 0, game));
+    state.canvas.saddGroup(turf);
     state.canvas.sadd(huds[0]);
     state.canvas.sadd(huds[1]);
     state.canvas.srenderAll();
+
+    state.updateViews = turf.update;
+    game.start();
 }
 
 module.exports = gameScreen;

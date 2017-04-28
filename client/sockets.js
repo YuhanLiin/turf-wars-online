@@ -3,7 +3,7 @@ var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
-var createGame = require('./bootstrapper.js');
+var boot = require('./bootstrapper.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -17,6 +17,7 @@ socket.on('startGame', function () {
 
 //State accessed by each screen
 var state = {
+    updateViews: function(){},
     canvas: canvas, 
     socket: socket, 
     playerControls: Controls(),
@@ -25,9 +26,6 @@ var state = {
     reset() {
         this.canvas.clear();
         this.canvas.realGroups = [];
-        //Clear key events
-        $('body').off('keydown');
-        $('body').off('keyup');
         //Stop current loading screen animation
         if (this.intervalId) {
             clearInterval(this.intervalId);
@@ -37,5 +35,5 @@ var state = {
 }
 
 //selectScreen(state);
-gameScreen(state, createGame(state, [['you','Slasher'], ['other','Slasher']]));
+gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');

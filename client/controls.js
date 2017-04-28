@@ -10,51 +10,56 @@ function KeyInput() {
     return manager;
 }
 
+var ymap = { 'u': -1, 'd': 1 };
+var xmap = { 'l': -1, 'r': 1 };
+
+ //Key handler for key down (editing input)
+function downHandler(input) {
+    console.log(input);
+    switch (input) {
+        case 'u':
+            this._vert = -1;
+            break;
+        case 'd':
+            this._vert = 1;
+            break;
+        case 'l':
+            this._hori = -1;
+            break;
+        case 'r':
+            this._hori = 1;
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            this._skill = input;
+            break;
+    }
+    console.log(this);
+}
+
+//Key handler for key up (zeroing input)
+function upHandler (input) {
+    switch (input) {
+        case 'u':
+        case 'd':
+            this._vert = 0;
+            break;
+        case 'l':
+        case 'r':
+            this._hori = 0;
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            this._skill = 0;
+            break;
+    }
+}
+
 KeyInput.prototype = {
-    //Key handler for key down (editing input)
-    _downHandler(input) {
-        switch (input) {
-            case 'u':
-                this._vert = -1;
-                break;
-            case 'd':
-                this._vert = 1;
-                break;
-            case 'l':
-                this._hori = -1;
-                break;
-            case 'r':
-                this._hori = -1;
-                break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                this._skill = input;
-                break;
-        }
-    },
-
-    //Key handler for key up (zeroing input)
-    _upHandler (input) {
-        switch (input) {
-            case 'u':
-            case 'd':
-                this._vert = 0;
-                break;
-            case 'l':
-            case 'r':
-                this._vert = 0;
-                break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                this._skill = 0;
-                break;
-        }
-    },
-
     //Never empty
     isEmpty() {
         return false;
@@ -80,7 +85,7 @@ function Controls() {
     return {
         //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
-            $('body').on('key'+type, function (e) {
+            $('body').on('key' + type, function (e) {
                 e.preventDefault();
                 var input = keyMap[e.which.toString()];
                 return inputHandler(input);
@@ -89,9 +94,14 @@ function Controls() {
         //Create the above input manager with all events registered
         makeInputManager() {
             var manager = KeyInput();
-            this.registerHandler('down', manager._downHandler);
-            this.registerHandler('up', manager._upHandler);
+            this.registerHandler('down', input=>downHandler.call(manager, input));
+            this.registerHandler('up', input=>upHandler.call(manager, input));
             return manager;
+        },
+
+        clear() {
+            $('body').off('keyup');
+            $('body').off('keydown');
         }
     };
 }

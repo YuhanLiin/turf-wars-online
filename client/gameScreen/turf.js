@@ -27,19 +27,24 @@ function Turf(x, y, game) {
     });
 
     var group = RealGroup(components, x, y);
+
+    //Call update on all components other than the green backdrop
+    function update() {
+        group.components.forEach(function (view, i) {
+            if (i !== 0) {
+                view.update();
+            }
+            else {
+                view.set({ left: 0, top: 0 })
+            }
+        });
+    }
+
     group.update = update;
     group.update();
     return group; 
 }
 
-//Call update on all components other than the green backdrop
-function update(){
-    var self = this;
-    this.components.forEach(function(view, i){
-        if (i !== 0){
-            view.update();
-        }
-    });
-}
+
 
 module.exports = Turf;

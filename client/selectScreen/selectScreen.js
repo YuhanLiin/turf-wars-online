@@ -36,6 +36,7 @@ function selectScreen(state) {
 
     
     state.reset();
+    state.playerControls.clear();
     state.canvas.setBackgroundColor('darkblue');
     state.playerControls.registerHandler('up', function(input) {
         if (input === 'l' || input === 'r') {

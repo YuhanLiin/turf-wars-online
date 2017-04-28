@@ -4,12 +4,16 @@ var Game = require('../game/game.js');
 
 function createGame(state, gameMap) {
     function updateGame(tick) {
+        if (game.frameCount < 150 ) console.log(game)
+        state.updateViews();
         state.canvas.srenderAll();
         fabric.util.requestAnimFrame(tick);
     }
 
     Game.inject(updateGame, function () { });
 
+    //Clear other inputs
+    state.playerControls.clear();
     //Set up game
     var inputs = { 'you': state.playerControls.makeInputManager(), 'other': Input() };
     var game = Game(gameMap, inputs);
@@ -78,51 +82,56 @@ function KeyInput() {
     return manager;
 }
 
+var ymap = { 'u': -1, 'd': 1 };
+var xmap = { 'u': -1, 'd': 1 };
+
+ //Key handler for key down (editing input)
+function downHandler(input) {
+    console.log(input);
+    switch (input) {
+        case 'u':
+            this._vert = -1;
+            break;
+        case 'd':
+            this._vert = 1;
+            break;
+        case 'l':
+            this._hori = -1;
+            break;
+        case 'r':
+            this._hori = 1;
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            this._skill = input;
+            break;
+    }
+    console.log(this);
+}
+
+//Key handler for key up (zeroing input)
+function upHandler (input) {
+    switch (input) {
+        case 'u':
+        case 'd':
+            this._vert = 0;
+            break;
+        case 'l':
+        case 'r':
+            this._hori = 0;
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            this._skill = 0;
+            break;
+    }
+}
+
 KeyInput.prototype = {
-    //Key handler for key down (editing input)
-    _downHandler(input) {
-        switch (input) {
-            case 'u':
-                this._vert = -1;
-                break;
-            case 'd':
-                this._vert = 1;
-                break;
-            case 'l':
-                this._hori = -1;
-                break;
-            case 'r':
-                this._hori = -1;
-                break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                this._skill = input;
-                break;
-        }
-    },
-
-    //Key handler for key up (zeroing input)
-    _upHandler (input) {
-        switch (input) {
-            case 'u':
-            case 'd':
-                this._vert = 0;
-                break;
-            case 'l':
-            case 'r':
-                this._vert = 0;
-                break;
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                this._skill = 0;
-                break;
-        }
-    },
-
     //Never empty
     isEmpty() {
         return false;
@@ -148,7 +157,7 @@ function Controls() {
     return {
         //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
-            $('body').on('key'+type, function (e) {
+            $('body').on('key' + type, function (e) {
                 e.preventDefault();
                 var input = keyMap[e.which.toString()];
                 return inputHandler(input);
@@ -157,9 +166,14 @@ function Controls() {
         //Create the above input manager with all events registered
         makeInputManager() {
             var manager = KeyInput();
-            this.registerHandler('down', manager._downHandler);
-            this.registerHandler('up', manager._upHandler);
+            this.registerHandler('down', input=>downHandler.call(manager, input));
+            this.registerHandler('up', input=>upHandler.call(manager, input));
             return manager;
+        },
+
+        clear() {
+            $('body').off('keyup');
+            $('body').off('keydown');
         }
     };
 }
@@ -175,7 +189,7 @@ var playerHudColour = { 'you': 'white', 'other': 'red' };
 function gameScreen(state, game) {
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
-    huds = [];
+    var huds = [];
     for (let player in game.characters) {
         let char = game.characters[player];
         if (char.posx < 350) {
@@ -186,11 +200,15 @@ function gameScreen(state, game) {
         }
     }
     
+    var turf = Turf(100, 0, game);
     //Add groups to canvas
-    state.canvas.saddGroup(Turf(100, 0, game));
+    state.canvas.saddGroup(turf);
     state.canvas.sadd(huds[0]);
     state.canvas.sadd(huds[1]);
     state.canvas.srenderAll();
+
+    state.updateViews = turf.update;
+    game.start();
 }
 
 module.exports = gameScreen;
@@ -277,25 +295,31 @@ function Turf(x, y, game) {
     });
 
     var group = RealGroup(components, x, y);
+
+    //Call update on all components other than the green backdrop
+    function update() {
+        group.components.forEach(function (view, i) {
+            if (i !== 0) {
+                view.update();
+            }
+            else {
+                view.set({ left: 0, top: 0 })
+            }
+        });
+    }
+
     group.update = update;
     group.update();
     return group; 
 }
 
-//Call update on all components other than the green backdrop
-function update(){
-    var self = this;
-    this.components.forEach(function(view, i){
-        if (i !== 0){
-            view.update();
-        }
-    });
-}
+
 
 module.exports = Turf;
 },{"../realGroup.js":8,"../views/allViews.js":13}],7:[function(require,module,exports){
 function loadScreen(state, text) {
     state.reset();
+    state.playerControls.clear();
     state.canvas.setBackgroundColor('lightgray');
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
@@ -520,6 +544,7 @@ function selectScreen(state) {
 
     
     state.reset();
+    state.playerControls.clear();
     state.canvas.setBackgroundColor('darkblue');
     state.playerControls.registerHandler('up', function(input) {
         if (input === 'l' || input === 'r') {
@@ -566,7 +591,7 @@ var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
-var createGame = require('./bootstrapper.js');
+var boot = require('./bootstrapper.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -580,6 +605,7 @@ socket.on('startGame', function () {
 
 //State accessed by each screen
 var state = {
+    updateViews: function(){},
     canvas: canvas, 
     socket: socket, 
     playerControls: Controls(),
@@ -588,9 +614,6 @@ var state = {
     reset() {
         this.canvas.clear();
         this.canvas.realGroups = [];
-        //Clear key events
-        $('body').off('keydown');
-        $('body').off('keyup');
         //Stop current loading screen animation
         if (this.intervalId) {
             clearInterval(this.intervalId);
@@ -600,7 +623,7 @@ var state = {
 }
 
 //selectScreen(state);
-gameScreen(state, createGame(state, [['you','Slasher'], ['other','Slasher']]));
+gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');
 },{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./loadScreen/loadScreen.js":7,"./selectScreen/selectScreen.js":11}],13:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
@@ -1120,7 +1143,7 @@ Game.inject = function (nextTick, sendUpdate) {
                     if (tickFrames >= Game.maxTickFrames) {
                         delta = 0;
                         //Should probably send corrective state
-                        Object.values(game.inputs).forEach(input=>input.clear());
+                        Object.values(self.inputs).forEach(input=>input.clear());
                     }
                 }
                 //Propagate to the next tick to gather more delta
@@ -1136,7 +1159,7 @@ Game.inject = function (nextTick, sendUpdate) {
             for (let player in this.characters) {
                 let char = this.characters[player];
                 let input = this.inputs[player];
-                let [dirx, diry, skillNum] = input.get();
+                let [diry, dirx, skillNum] = input.get();
                 //Only process inputs if input queue isnt empty
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);

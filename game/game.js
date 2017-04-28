@@ -78,7 +78,7 @@ Game.inject = function (nextTick, sendUpdate) {
                     if (tickFrames >= Game.maxTickFrames) {
                         delta = 0;
                         //Should probably send corrective state
-                        Object.values(game.inputs).forEach(input=>input.clear());
+                        Object.values(self.inputs).forEach(input=>input.clear());
                     }
                 }
                 //Propagate to the next tick to gather more delta
@@ -94,7 +94,7 @@ Game.inject = function (nextTick, sendUpdate) {
             for (let player in this.characters) {
                 let char = this.characters[player];
                 let input = this.inputs[player];
-                let [dirx, diry, skillNum] = input.get();
+                let [diry, dirx, skillNum] = input.get();
                 //Only process inputs if input queue isnt empty
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);

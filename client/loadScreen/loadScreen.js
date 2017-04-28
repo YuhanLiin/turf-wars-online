@@ -1,5 +1,6 @@
 function loadScreen(state, text) {
     state.reset();
+    state.playerControls.clear();
     state.canvas.setBackgroundColor('lightgray');
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
