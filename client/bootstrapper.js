@@ -4,7 +4,7 @@ var Game = require('../game/game.js');
 function createGame(state, gameMap) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
-        state.updateViews();
+        state.updateViewFunctions.forEach(update=>update());
         state.canvas.srenderAll();
         fabric.util.requestAnimFrame(tick);
     }

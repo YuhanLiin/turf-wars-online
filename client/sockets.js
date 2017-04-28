@@ -17,7 +17,7 @@ socket.on('startGame', function () {
 
 //State accessed by each screen
 var state = {
-    updateViews: function(){},
+    updateViewFunctions: [],
     canvas: canvas, 
     socket: socket, 
     playerControls: Controls(),

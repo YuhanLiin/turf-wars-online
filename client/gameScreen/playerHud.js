@@ -46,7 +46,14 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         originY: 'top',
         height: height
     });
+
+    //Update all skillIcons; skip the header at the end
+    function update() {
+        group.getObjects().forEach(function (component, i) {
+            if (i < 4) component.update();
+        });
+    }
+    group.update = update;
     return group;
 }
-
 module.exports = Hud;

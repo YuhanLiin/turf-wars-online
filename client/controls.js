@@ -15,6 +15,7 @@ var xmap = { 'l': -1, 'r': 1 };
 
  //Key handler for key down (editing input)
 function downHandler(input) {
+    console.log(input)
     switch (input) {
         case 'u':
         case 'd':
@@ -80,7 +81,6 @@ function Controls() {
         //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
             $('body').on('key' + type, function (e) {
-                console.log(e.which)
                 e.preventDefault();
                 var input = keyMap[e.which.toString()];
                 return inputHandler(input);

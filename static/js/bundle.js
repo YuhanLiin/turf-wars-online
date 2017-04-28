@@ -5,7 +5,7 @@ var Game = require('../game/game.js');
 function createGame(state, gameMap) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
-        state.updateViews();
+        state.updateViewFunctions.forEach(update=>update());
         state.canvas.srenderAll();
         fabric.util.requestAnimFrame(tick);
     }
@@ -202,7 +202,7 @@ function gameScreen(state, game) {
     state.canvas.sadd(huds[1]);
     state.canvas.srenderAll();
 
-    state.updateViews = turf.update;
+    state.updateViewFunctions.push(turf.update, huds[0].update, huds[1].update);
     game.start();
 }
 
@@ -256,9 +256,16 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         originY: 'top',
         height: height
     });
+
+    //Update all skillIcons; skip the header at the end
+    function update() {
+        group.getObjects().forEach(function (component, i) {
+            if (i < 4) component.update();
+        });
+    }
+    group.update = update;
     return group;
 }
-
 module.exports = Hud;
 },{"../views/allViews.js":13}],6:[function(require,module,exports){
 var views = require('../views/allViews.js');
@@ -600,7 +607,7 @@ socket.on('startGame', function () {
 
 //State accessed by each screen
 var state = {
-    updateViews: function(){},
+    updateViewFunctions: [],
     canvas: canvas, 
     socket: socket, 
     playerControls: Controls(),
@@ -797,7 +804,9 @@ function CutView() {
     var view = Object.assign(new fabric.Circle({
         radius: 20,
         fill: 'red',
-        opacity: 0
+        opacity: 0,
+        originX: 'center',
+        originY: 'center'
     }), skillView);
     view._update = _update;
     return view;
@@ -835,7 +844,8 @@ function DashView(){
     for (let i=0; i<9; i++) 
         lines.push(new fabric.Line({fill: 'black'}));
     var view = Object.assign(new fabric.Group(lines, {
-        fill: 'black',
+        left: 0,
+        top: 0,
         opacity: 0
     }), skillView);
     view._update = _update;
@@ -862,7 +872,9 @@ function _update(){
 function DodgeView(){
     var view = Object.assign(new fabric.Circle({
         radius: 20,
-        color: 'white'
+        color: 'white',
+        originX: 'center',
+        originY: 'center'
     }), skillView);
     view._update = _update;
     return view;
@@ -1159,7 +1171,7 @@ Game.inject = function (nextTick, sendUpdate) {
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);
                     //Stream the player's input if there is any
-                    sendUpdate('update', player, input.pack(dirx, diry, skillNum))
+                    sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));

@@ -28,7 +28,8 @@ function DashView(){
     for (let i=0; i<9; i++) 
         lines.push(new fabric.Line({fill: 'black'}));
     var view = Object.assign(new fabric.Group(lines, {
-        fill: 'black',
+        left: 0,
+        top: 0,
         opacity: 0
     }), skillView);
     view._update = _update;

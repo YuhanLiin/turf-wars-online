@@ -24,7 +24,7 @@ function gameScreen(state, game) {
     state.canvas.sadd(huds[1]);
     state.canvas.srenderAll();
 
-    state.updateViews = turf.update;
+    state.updateViewFunctions.push(turf.update, huds[0].update, huds[1].update);
     game.start();
 }
 

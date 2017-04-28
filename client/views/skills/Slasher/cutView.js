@@ -21,7 +21,9 @@ function CutView() {
     var view = Object.assign(new fabric.Circle({
         radius: 20,
         fill: 'red',
-        opacity: 0
+        opacity: 0,
+        originX: 'center',
+        originY: 'center'
     }), skillView);
     view._update = _update;
     return view;
