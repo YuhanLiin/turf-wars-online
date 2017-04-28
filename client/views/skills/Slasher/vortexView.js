@@ -47,10 +47,12 @@ function VortexView (){
         fill: 'gray'
     });
 
-    var view = new fabric.Group([circle, outerLining, innerLining, bar], {
+    var view = Object.assign(new fabric.Group([circle, outerLining, innerLining, bar], {
         originY: 'center', originX: 'center'
-    });
+    }), skillView);
     view._spinState = 1;
     view._update = _update;
     return view;
 }
+
+module.exports = VortexView;

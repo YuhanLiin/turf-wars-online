@@ -1,5 +1,5 @@
 //Use this canvas for rest of the game and configure it with methods
-var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
+var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
 canvas.realGroups = [];
 

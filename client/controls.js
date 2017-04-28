@@ -69,8 +69,8 @@ KeyInput.prototype = {
     
 
     //General API methods are repeated
-    pack: Input.prototype.pack;
-    unpack: Input.prototype.unpack;
+    pack: Input.prototype.pack,
+    unpack: Input.prototype.unpack
 }
 
 //Convert keycode to game inputCode via one set of controls

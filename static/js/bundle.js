@@ -1,4 +1,24 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var Input = require('../game/input.js');
+var Game = require('../game/game.js');
+
+function createGame(state, gameMap) {
+    function updateGame(tick) {
+        state.canvas.srenderAll();
+        fabric.util.requestAnimFrame(tick);
+    }
+
+    Game.inject(updateGame, function () { });
+
+    //Set up game
+    var inputs = { 'you': state.playerControls.makeInputManager(), 'other': Input() };
+    var game = Game(gameMap, inputs);
+
+    return game;
+}
+
+module.exports = createGame;
+},{"../game/game.js":24,"../game/input.js":26}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.Canvas('gameScreen', { renderOnAddRemove: false });
 
@@ -34,22 +54,24 @@ canvas.saddGroup = function (realGroup) {
     this.realGroups.push(realGroup);
 }
 
-//Render all entities with realgroup offsets in mind. Reset after render is optional
-canvas.srenderAll = function (realGroup, resetOpt = true) {
+//Render all entities with realgroup offsets in mind
+canvas.srenderAll = function (realGroup) {
     //Apply realGroup offsets
     this.realGroups.forEach(group=>group.offsetAll());
     //Apply canvas scale resize
     this.sresizeAll();
     this.renderAll();
-    //Reset the realGroup entities to original position
-    if (resetOpt) this.realGroups.forEach(group=>group.resetAll());
 }
 
 module.exports = canvas;
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
+var Input = require('../game/input.js');
+
+//Input manager used by client player, which has no queue
 function KeyInput() {
     var manager = Object.create(KeyInput.prototype);  
+    //Instead of queue store a flat input record to be edited by keyboard inputs
     manager._vert = 0;
     manager._hori = 0;
     manager._skill = 0;
@@ -57,6 +79,7 @@ function KeyInput() {
 }
 
 KeyInput.prototype = {
+    //Key handler for key down (editing input)
     _downHandler(input) {
         switch (input) {
             case 'u':
@@ -71,15 +94,16 @@ KeyInput.prototype = {
             case 'r':
                 this._hori = -1;
                 break;
-            case '1':
-            case '2':
-            case '3':
-            case '4':
+            case 1:
+            case 2:
+            case 3:
+            case 4:
                 this._skill = input;
                 break;
         }
     },
 
+    //Key handler for key up (zeroing input)
     _upHandler (input) {
         switch (input) {
             case 'u':
@@ -90,30 +114,39 @@ KeyInput.prototype = {
             case 'r':
                 this._vert = 0;
                 break;
-            case '1':
-            case '2':
-            case '3':
-            case '4':
+            case 1:
+            case 2:
+            case 3:
+            case 4:
                 this._skill = 0;
                 break;
         }
     },
 
+    //Never empty
     isEmpty() {
         return false;
     },
+    //No need to clear due to lack of queue
+    clear() {},
 
     get() {
         return [this._vert, this._hori, this._skill];
     },
 
-    clear() {}
+    
+
+    //General API methods are repeated
+    pack: Input.prototype.pack,
+    unpack: Input.prototype.unpack
 }
 
+//Convert keycode to game inputCode via one set of controls
 function Controls() {
     //Maps keydown keycodes to the type of input. Defaults to WASD for UDLR and JKL; for the 4 skills
     var keyMap = { '87': 'u', '83': 'd', '65': 'l', '68': 'r', '74': 1, '75': 2, '76': 3, '186': 4, '13': 'enter' };
     return {
+        //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
             $('body').on('key'+type, function (e) {
                 e.preventDefault();
@@ -121,6 +154,7 @@ function Controls() {
                 return inputHandler(input);
             });
         },
+        //Create the above input manager with all events registered
         makeInputManager() {
             var manager = KeyInput();
             this.registerHandler('down', manager._downHandler);
@@ -132,44 +166,41 @@ function Controls() {
 
 module.exports = Controls;
 
-},{}],3:[function(require,module,exports){
+},{"../game/input.js":26}],4:[function(require,module,exports){
 var Hud = require('./playerHud.js');
 var Turf = require('./turf.js');
-var Input = require('../../game/input.js');
-var Game = require('../../game/game.js');
 
-var playerHudColour = {'you': 'white', 'other': 'red'};
-Game.inject(function(){}, function(){});
+var playerHudColour = { 'you': 'white', 'other': 'red' };
 
-function gameScreen(state, gameMap) {
+function gameScreen(state, game) {
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
-    var playerInput = state.playerControls.makeInputManager();
-
-    //Player1 gets left HUD
-    var leftHud = Hud(50, 10, 100, 700, gameMap[0][0], gameMap[0][1], playerHudColour[gameMap[0][0]], 0, 200);
-    //Player2 gets right HUD
-    var rightHud = Hud(950, 10, 100, 700, gameMap[1][0], gameMap[1][1], playerHudColour[gameMap[1][0]], 500, 0);
-    //Map player to skill icons
-    var iconJson = {};
-    iconJson[gameMap[0][0]] = leftHud.icons;
-    iconJson[gameMap[1][0]] = rightHud.icons;
-
-    //Set up game
-    var inputs = {'you': playerInput, 'other': Input()};
-    var game = Game(gameMap, inputs);
-    state.canvas.saddGroup(Turf(100,0,game, gameMap));
+    huds = [];
+    for (let player in game.characters) {
+        let char = game.characters[player];
+        if (char.posx < 350) {
+            huds.push(Hud(50, 10, 100, 700, player, char, playerHudColour[player], 0, 200));
+        }
+        else {
+            huds.push(Hud(950, 10, 100, 700, player, char, playerHudColour[player], 500, 0));
+        }
+    }
+    
+    //Add groups to canvas
+    state.canvas.saddGroup(Turf(100, 0, game));
+    state.canvas.sadd(huds[0]);
+    state.canvas.sadd(huds[1]);
     state.canvas.srenderAll();
 }
 
 module.exports = gameScreen;
-},{"../../game/game.js":17,"../../game/input.js":19,"./playerHud.js":4,"./turf.js":5}],4:[function(require,module,exports){
+},{"./playerHud.js":5,"./turf.js":6}],5:[function(require,module,exports){
 var views = require('../views/allViews.js');
 var capitalize = fabric.util.string.capitalize;
 
 //HUD part with player name and character sprite
-function Header(x, y, width, height, playerName, charName, textColor){
-    var name = new fabric.Textbox(capitalize(playerName), {
+function Header(x, y, width, height, playerName, char, textColor){
+    var nameText = new fabric.Textbox(capitalize(playerName), {
         textAlign: 'center',
         originX: 'center',
         width: width,
@@ -179,8 +210,8 @@ function Header(x, y, width, height, playerName, charName, textColor){
         fontSize: 36,
         fill: textColor
     });
-    var char = views[charName].Sprite(0, height*2 / 3, width / 2 - 5);
-    return new fabric.Group([char, name],{
+    var charView = views[char.name].Sprite(0, height*2 / 3, width / 2 - 5);
+    return new fabric.Group([charView, nameText],{
         left: x, top: y,
         originX: 'center', originY: 'top'
     });
@@ -188,21 +219,21 @@ function Header(x, y, width, height, playerName, charName, textColor){
 
 //Sidebar HUD that displays the character and skills owned by one player
 //headerStart and iconStart customizes the positions of the player header and skill icons
-function Hud(x, y, width, height, playerName, charName, textColor, headerStart, iconStart) {
+function Hud(x, y, width, height, playerName, char, textColor, headerStart, iconStart) {
     //Put header at top
-    var header = Header(0, headerStart, width, height * 2 / 7, playerName, charName, textColor);
-    //Arrays for cooldown filters as well as group components
-    var icons = [], components = [];
-    //Generate skill icons vertically along with their filters
-    views[charName].skills.map(function (skill) {
+    var header = Header(0, headerStart, width, height * 2 / 7, playerName, char, textColor);
+
+    //Generate skill icons vertically and bind them to character skills
+     var components = views[char.name].skills.map(function (skill, i) {
         var icon = skill.Icon(0, iconStart, height / 9);
         icon.set({ originX: 'center', originY: 'top' });
 
-        components.push(icon);
-        icons.push(icon);
+        //Bind icons to character skill models
+        icon.bind(char.skills[i]);
         iconStart += height / 6;
         return icon;
-    });
+     });
+
     components.push(header);
     var group = new fabric.Group(components, {
         left: x,
@@ -212,45 +243,16 @@ function Hud(x, y, width, height, playerName, charName, textColor, headerStart, 
         originY: 'top',
         height: height
     });
-    group.icons = icons;
     return group;
 }
 
 module.exports = Hud;
-},{"../views/allViews.js":11}],5:[function(require,module,exports){
+},{"../views/allViews.js":13}],6:[function(require,module,exports){
 var views = require('../views/allViews.js');
-
-//Fabricjs groups make no sense, so i use this instead
-function RealGroup(components, x, y){
-    var group = Object.create(RealGroup.prototype);
-    group.left = x;
-    group.top = y;
-    group.components = components;
-    return group;
-}
-
-RealGroup.prototype = {
-    add(item){
-        this.components.push(item);
-    },
-    //Apply realGroup offsets
-    offsetAll(){
-        var self = this;
-        this.components.forEach(function(item){
-            item.set({left: item.left+self.left, top: item.top+self.top});
-        });
-    },
-    //Reset all component positions to original and also set scale back to 1 for correct resizing
-    resetAll(){
-        var self = this;
-        this.components.forEach(function(item){
-            item.set({left: item.left-self.left, top: item.top-self.top, scaleX:1, scaleY:1});
-        })
-    }
-}
+var RealGroup = require('../realGroup.js');
 
 //Assumed to be same size as game board. Components all have bindings to game entities and will update when drawn
-function Turf(x, y, game, gameMap) {
+function Turf(x, y, game) {
     var turf = new fabric.Rect({
         left: 0,
         top: 0,
@@ -261,13 +263,17 @@ function Turf(x, y, game, gameMap) {
     });
 
     var components = [turf];
-
-    gameMap.forEach(function(pair){
-        var [player, charName] = pair;
+    console.log(views)
+    //For each character and skill in game bind to a component view
+    Object.keys(game.characters).forEach(function(player){
         var character = game.characters[player];
-        components.push(views[charName].Sprite(100, 100, character.radius)
+        //Bind character to view
+        components.push(views[character.name].Sprite(100, 100, character.radius)
             .bind(character));
-        //Do this later
+        views[character.name].skills.forEach(function(skill, i){
+            //Bind each skill to views
+            components.push(skill.Sprite().bind(character.skills[i]));
+        })
     });
 
     var group = RealGroup(components, x, y);
@@ -287,7 +293,7 @@ function update(){
 }
 
 module.exports = Turf;
-},{"../views/allViews.js":11}],6:[function(require,module,exports){
+},{"../realGroup.js":8,"../views/allViews.js":13}],7:[function(require,module,exports){
 function loadScreen(state, text) {
     state.reset();
     state.canvas.setBackgroundColor('lightgray');
@@ -318,7 +324,31 @@ function loadScreen(state, text) {
 }
 
 module.exports = loadScreen;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+//Fabricjs groups make no sense, so i use this instead
+function RealGroup(components, x, y){
+    var group = Object.create(RealGroup.prototype);
+    group.left = x;
+    group.top = y;
+    group.components = components;
+    return group;
+}
+
+RealGroup.prototype = {
+    add(item){
+        this.components.push(item);
+    },
+    //Apply realGroup offsets. Assume position of object has already been reset with default scaling in mind
+    offsetAll(){
+        var self = this;
+        this.components.forEach(function(item){
+            item.set({left: item.left+self.left, top: item.top+self.top, scaleX: 1, scaleY: 1});
+        });
+    },
+}
+
+module.exports = RealGroup;
+},{}],9:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -423,7 +453,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":11}],8:[function(require,module,exports){
+},{"../views/allViews.js":13}],10:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -451,7 +481,7 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":11}],9:[function(require,module,exports){
+},{"../views/allViews.js":13}],11:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
@@ -530,12 +560,13 @@ function selectScreen(state) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":11,"./dataDisplay.js":7,"./selectBox.js":8}],10:[function(require,module,exports){
+},{"../views/allViews.js":13,"./dataDisplay.js":9,"./selectBox.js":10}],12:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
+var createGame = require('./bootstrapper.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -568,11 +599,16 @@ var state = {
     }
 }
 
-selectScreen(state);
-//gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
-loadScreen(state, 'Loading');
-},{"./canvas.js":1,"./controls.js":2,"./gameScreen/gameScreen.js":3,"./loadScreen/loadScreen.js":6,"./selectScreen/selectScreen.js":9}],11:[function(require,module,exports){
+//selectScreen(state);
+gameScreen(state, createGame(state, [['you','Slasher'], ['other','Slasher']]));
+//loadScreen(state, 'Loading');
+},{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./loadScreen/loadScreen.js":7,"./selectScreen/selectScreen.js":11}],13:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
+var CutView = require('./skills/Slasher/cutView.js');
+var DashView = require('./skills/Slasher/dashView.js');
+var DodgeView = require('./skills/Slasher/dodgeView.js');
+var VortexView = require('./skills/Slasher/vortexView.js');
+
 var IconGen = require('./skillIcon.js');
 
 var descriptions = {
@@ -582,25 +618,26 @@ var descriptions = {
     'Vortex': "Become invinsible and slice up everything around you for the next 4 seconds."
 }
 
-function skillViewModel(name, description, cooldown){
+function skillViewModel(name, description, cooldown, skillView){
     return {
         name: name,
         description: description,
         cooldown: cooldown,
-        Icon: IconGen(name)
+        Icon: IconGen(name),
+        Sprite: skillView
     };
 }
 
 module.exports.Slasher = {
     Sprite: SlasherView,
     skills: [
-        skillViewModel('Cut', 'Quick melee attack that hits right in front of you.', '0.5'),
-        skillViewModel('Dash', 'Move a short distance in any of the 8 cardinal directions.', '2'),
-        skillViewModel('Dodge', 'Evade all attacks for an instant.', '3.5'),
-        skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15'),
+        skillViewModel('Cut', 'Quick melee attack that hits right in front of you.', '0.5', CutView),
+        skillViewModel('Dash', 'Move a short distance in any of the 8 cardinal directions.', '2', DashView),
+        skillViewModel('Dodge', 'Evade all attacks for an instant.', '3.5', DodgeView),
+        skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15', VortexView),
     ]
 };
-},{"./characters/slasherView.js":13,"./skillIcon.js":14}],12:[function(require,module,exports){
+},{"./characters/slasherView.js":15,"./skillIcon.js":16,"./skills/Slasher/cutView.js":17,"./skills/Slasher/dashView.js":18,"./skills/Slasher/dodgeView.js":19,"./skills/Slasher/vortexView.js":20}],14:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -608,7 +645,7 @@ module.exports = function(model){
     //Allow call chaining
     return this;
 }
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Method for syncing view with character state
@@ -652,7 +689,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{"../bind.js":12}],14:[function(require,module,exports){
+},{"../bind.js":14}],16:[function(require,module,exports){
 var bind = require('./bind.js');
 
 //Change height of filter based on how much of the cooldown has passed
@@ -718,7 +755,178 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{"./bind.js":12}],15:[function(require,module,exports){
+},{"./bind.js":14}],17:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+//Draw out the cut attack as long as it is active
+function _update(){
+    var atk = this.model.attack;
+    if (atk.curFrame > 0){
+        this.set({
+            left: atk.posx,
+            top: atk.posy,
+            opacity: 1
+        });
+    }
+    else{
+        this.setOpacity(0);
+    }
+}
+
+//Should probably show a sprite. Right now just shows a circle
+//Origin is at center
+function CutView() {
+    var view = Object.assign(new fabric.Circle({
+        radius: 20,
+        fill: 'red',
+        opacity: 0
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = CutView;
+},{"../skillView.js":21}],18:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var skill = this.model;
+    this.setOpacity(1);
+    var lines = this.getObjects();
+    var dir = [0, 1, -1];
+
+    var l = 0
+    for (let i=0; i<3; i++){
+        for (let j=0; j<3; j++){
+            lines[l].x1 = dir[i] * skill.character.radius * skill.character.facex;
+            lines[l].y1 = dir[j] * skill.character.radius * skill.character.facey;
+            l++;
+        }
+    }
+
+    lines.forEach(function(line){
+        line.x2 = line.x1 - 80*skill.character.facex;
+        line.y2 = line.y1 - 80*skill.character.facey;
+    });
+}
+
+//Needs to be rendered before characters
+function DashView(){
+    //Put 9 lines into the group
+    var lines = []
+    for (let i=0; i<9; i++) 
+        lines.push(new fabric.Line({fill: 'black'}));
+    var view = Object.assign(new fabric.Group(lines, {
+        fill: 'black',
+        opacity: 0
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = DashView;
+},{"../skillView.js":21}],19:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var skill = this.model;
+    this.set({left: skill.character.posx, top: skill.character.posy});
+    //Have it blink once every 2 frames
+    if (skill.curFrame/2 % 2 != 0){
+        this.setOpacity(0.5);
+    }
+    else{
+        this.setOpacity(0);
+    }
+}
+
+//An overlay for the character, origin in center
+function DodgeView(){
+    var view = Object.assign(new fabric.Circle({
+        radius: 20,
+        color: 'white'
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = DodgeView;
+},{"../skillView.js":21}],20:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var skill = this.model;
+    var [circle, outerLining, innerLining, bar] = this.getObjects();
+    this.set({left: skill.character.posx, right: skill.character.posy});
+    circle.setOpacity(1);
+
+    if (skill.curFrame <= 10){
+        circle.setRadius(20*skill.curFrame/10);
+    }
+    else if (skill.curFrame >= skill.endFrame-10){
+        outerLining.setOpacity(0);
+        innerLining.setOpacity(0);
+        bar.setOpacity(0);
+        var framesLeft = skill.endFrame - skill.curFrame;
+        circle.setRadius(20*framesLeft/10)
+    }
+    else{
+        outerLining.setOpacity(1);
+        innerLining.setOpacity(1);
+        bar.setOpacity(1);
+        circle.setRadius(35);
+        if (this._spinState <= 3) bar.set({width:10, height:60});
+        else bar.set({width:60, height:10});
+    }
+
+    this._spinState++;
+    if (this._spinState > 6) this._spinState = 1;
+}
+
+function VortexView (){
+    var circle = new fabric.Circle({
+        radius: 0,
+        fill: 'gray',
+    });
+    var outerLining = new fabric.Circle({
+        radius: 27,
+        fill: '',
+        stroke: 'black',
+    });
+    var innerLining = outerLining.clone();
+    innerLining.setRadius(15);
+    var bar = new fabric.Rect({
+        originX: 'center',
+        originY: 'center',
+        fill: 'gray'
+    });
+
+    var view = Object.assign(new fabric.Group([circle, outerLining, innerLining, bar], {
+        originY: 'center', originX: 'center'
+    }), skillView);
+    view._spinState = 1;
+    view._update = _update;
+    return view;
+}
+
+module.exports = VortexView;
+},{"../skillView.js":21}],21:[function(require,module,exports){
+var bind = require('../bind.js');
+
+//Mixin for all skills
+module.exports = {
+    update(){
+        var skill = this.model;
+        if (skill.curFrame > 0){
+            this._update();
+        }
+        //Automatically turn off nonactive skill views
+        else this.setOpacity(0);
+    },
+
+    bind: bind
+};
+},{"../bind.js":14}],22:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -814,7 +1022,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],16:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -825,12 +1033,13 @@ var skillFactories = [Cut, Dash, Dodge, Vortex];
 function Slasher(...args) {
     var char = Character.apply(undefined, args);
     char.setSpeed(7);
+    char.name = 'Slasher';
     char.skills = skillFactories.map(factory=>factory(char, char.attackList, char.projectileList));
     return char;
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":20,"../skills/Slasher/dash.js":21,"../skills/Slasher/dodge.js":22,"../skills/Slasher/vortex.js":23,"./character.js":15}],17:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":27,"../skills/Slasher/dash.js":28,"../skills/Slasher/dodge.js":29,"../skills/Slasher/vortex.js":30,"./character.js":22}],24:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -980,7 +1189,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":16}],18:[function(require,module,exports){
+},{"./characters/slasher.js":23}],25:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -1056,7 +1265,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],19:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -1092,7 +1301,7 @@ InputRecord.prototype = {
         return this._vert.isEmpty();
     },
 
-    //Wipe out input buffer when dumping frames
+    //API method wipe out input buffer when dumping frames
     clear(){
         this._vert.clear();
         this._hori.clear();
@@ -1109,12 +1318,12 @@ InputRecord.prototype = {
         this.set(s, '_skill');
     },
 
-    //Unpack inputCode into numbers. Format is vert, hori, skill (3 chars)
+    //API method unpacks inputCode into numbers. Format is vert, hori, skill (3 chars)
     unpack(inputCode) {
         return [dirInputMap[inputCode[0]], dirInputMap[inputCode[1]], parseInt(inputCode[2])];
     },
 
-    //Reverses unpack action and returns inputcode for redirecting
+    //API method reverses unpack action and returns inputcode for redirecting
     pack(...args) {
         var code = '';
         for (let i = 0; i < 3; i++) {
@@ -1126,7 +1335,7 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":25}],20:[function(require,module,exports){
+},{"denque":32}],27:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1168,7 +1377,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":18,"../skill.js":24}],21:[function(require,module,exports){
+},{"../../hitbox.js":25,"../skill.js":31}],28:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1200,7 +1409,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":18,"../skill.js":24}],22:[function(require,module,exports){
+},{"../../hitbox.js":25,"../skill.js":31}],29:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1224,7 +1433,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":18,"../skill.js":24}],23:[function(require,module,exports){
+},{"../../hitbox.js":25,"../skill.js":31}],30:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1257,7 +1466,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":18,"../skill.js":24}],24:[function(require,module,exports){
+},{"../../hitbox.js":25,"../skill.js":31}],31:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1309,7 +1518,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],25:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1563,4 +1772,4 @@ Denque.prototype._shrinkArray = function _shrinkArray() {
 
 module.exports = Denque;
 
-},{}]},{},[10]);
+},{}]},{},[12]);

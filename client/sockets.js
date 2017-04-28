@@ -3,6 +3,7 @@ var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./loadScreen/loadScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
+var createGame = require('./bootstrapper.js');
 
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 socket.emit('roomId', roomId);
@@ -35,6 +36,6 @@ var state = {
     }
 }
 
-selectScreen(state);
-//gameScreen(state, [['you','Slasher'], ['other','Slasher']]);
-loadScreen(state, 'Loading');
+//selectScreen(state);
+gameScreen(state, createGame(state, [['you','Slasher'], ['other','Slasher']]));
+//loadScreen(state, 'Loading');
