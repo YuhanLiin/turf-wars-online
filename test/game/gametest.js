@@ -125,7 +125,7 @@ describe('Gameobj', function () {
             game = Game([ ['player1', 'Slasher'], ['player2', 'Slasher' ]], { player1: Input(), player2: Input() });
             endUpdates = [];
             //Move them together horizontally
-            for (let i = 0; i < Math.round(300 / 7) ; i++) {
+            for (let i = 0; i < Math.round(360 / 7) ; i++) {
                 game.inputs.player2.process('010');
                 game.inputs.player1.process('0n0');
                 game.frame();
@@ -133,7 +133,7 @@ describe('Gameobj', function () {
             
             assert.deepStrictEqual(endUpdates, []);
             //Move them together vertically
-            for (let i = 0; i < Math.round(360 / 7) ; i++) {
+            for (let i = 0; i < Math.round(300 / 7) ; i++) {
                 game.inputs.player2.process('100');
                 game.inputs.player1.process('n00');
                 game.frame();

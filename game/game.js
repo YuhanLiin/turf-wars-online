@@ -99,7 +99,7 @@ Game.inject = function (nextTick, sendUpdate) {
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);
                     //Stream the player's input if there is any
-                    sendUpdate('update', player, input.pack(dirx, diry, skillNum))
+                    sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));

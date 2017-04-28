@@ -15,19 +15,14 @@ var xmap = { 'l': -1, 'r': 1 };
 
  //Key handler for key down (editing input)
 function downHandler(input) {
-    console.log(input);
     switch (input) {
         case 'u':
-            this._vert = -1;
-            break;
         case 'd':
-            this._vert = 1;
+            this._vert = ymap[input];
             break;
         case 'l':
-            this._hori = -1;
-            break;
         case 'r':
-            this._hori = 1;
+            this._hori = xmap[input];
             break;
         case 1:
         case 2:
@@ -36,7 +31,6 @@ function downHandler(input) {
             this._skill = input;
             break;
     }
-    console.log(this);
 }
 
 //Key handler for key up (zeroing input)
@@ -44,17 +38,17 @@ function upHandler (input) {
     switch (input) {
         case 'u':
         case 'd':
-            this._vert = 0;
+            if (this._vert === ymap[input]) this._vert = 0;
             break;
         case 'l':
         case 'r':
-            this._hori = 0;
+            if (this._hori === xmap[input]) this._hori = 0;
             break;
         case 1:
         case 2:
         case 3:
         case 4:
-            this._skill = 0;
+            if (this._skill === input) this._skill = 0;
             break;
     }
 }
@@ -86,6 +80,7 @@ function Controls() {
         //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
             $('body').on('key' + type, function (e) {
+                console.log(e.which)
                 e.preventDefault();
                 var input = keyMap[e.which.toString()];
                 return inputHandler(input);

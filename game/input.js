@@ -18,7 +18,7 @@ InputRecord.prototype = {
     //Sets keycode for specific input type
     set(newKey, inputType) {
         //Prevent overflow
-        if (this[inputType].length >= 30) return;
+        if (this[inputType].length >= 100) return;
         //Append keycode to the queue
         this[inputType].push(newKey);
     },
