@@ -1,36 +1,8 @@
 var views = require('../views/allViews.js');
-
-//Fabricjs groups make no sense, so i use this instead
-function RealGroup(components, x, y){
-    var group = Object.create(RealGroup.prototype);
-    group.left = x;
-    group.top = y;
-    group.components = components;
-    return group;
-}
-
-RealGroup.prototype = {
-    add(item){
-        this.components.push(item);
-    },
-    //Apply realGroup offsets
-    offsetAll(){
-        var self = this;
-        this.components.forEach(function(item){
-            item.set({left: item.left+self.left, top: item.top+self.top});
-        });
-    },
-    //Reset all component positions to original and also set scale back to 1 for correct resizing
-    resetAll(){
-        var self = this;
-        this.components.forEach(function(item){
-            item.set({left: item.left-self.left, top: item.top-self.top, scaleX:1, scaleY:1});
-        })
-    }
-}
+var RealGroup = require('../realGroup.js');
 
 //Assumed to be same size as game board. Components all have bindings to game entities and will update when drawn
-function Turf(x, y, game, gameMap) {
+function Turf(x, y, game, gameMap, iconJson) {
     var turf = new fabric.Rect({
         left: 0,
         top: 0,
@@ -45,9 +17,15 @@ function Turf(x, y, game, gameMap) {
     gameMap.forEach(function(pair){
         var [player, charName] = pair;
         var character = game.characters[player];
+        //Bind character to view
         components.push(views[charName].Sprite(100, 100, character.radius)
             .bind(character));
-        //Do this later
+        views[charName].skills.forEach(function(skill, i){
+            //Bind each skill to views
+            components.push(skill.Sprite().bind(character.skills[i]));
+            //Bind each skill to icons as well, but dont add to components since they are not in same group
+            iconJson[player].bind(character.skills[i]);
+        })
     });
 
     var group = RealGroup(components, x, y);

@@ -33,7 +33,7 @@ InputRecord.prototype = {
         return this._vert.isEmpty();
     },
 
-    //Wipe out input buffer when dumping frames
+    //API method wipe out input buffer when dumping frames
     clear(){
         this._vert.clear();
         this._hori.clear();
@@ -50,12 +50,12 @@ InputRecord.prototype = {
         this.set(s, '_skill');
     },
 
-    //Unpack inputCode into numbers. Format is vert, hori, skill (3 chars)
+    //API method unpacks inputCode into numbers. Format is vert, hori, skill (3 chars)
     unpack(inputCode) {
         return [dirInputMap[inputCode[0]], dirInputMap[inputCode[1]], parseInt(inputCode[2])];
     },
 
-    //Reverses unpack action and returns inputcode for redirecting
+    //API method reverses unpack action and returns inputcode for redirecting
     pack(...args) {
         var code = '';
         for (let i = 0; i < 3; i++) {

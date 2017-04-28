@@ -33,15 +33,13 @@ canvas.saddGroup = function (realGroup) {
     this.realGroups.push(realGroup);
 }
 
-//Render all entities with realgroup offsets in mind. Reset after render is optional
-canvas.srenderAll = function (realGroup, resetOpt = true) {
+//Render all entities with realgroup offsets in mind
+canvas.srenderAll = function (realGroup) {
     //Apply realGroup offsets
     this.realGroups.forEach(group=>group.offsetAll());
     //Apply canvas scale resize
     this.sresizeAll();
     this.renderAll();
-    //Reset the realGroup entities to original position
-    if (resetOpt) this.realGroups.forEach(group=>group.resetAll());
 }
 
 module.exports = canvas;

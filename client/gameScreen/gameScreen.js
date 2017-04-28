@@ -23,7 +23,9 @@ function gameScreen(state, gameMap) {
     //Set up game
     var inputs = {'you': playerInput, 'other': Input()};
     var game = Game(gameMap, inputs);
-    state.canvas.saddGroup(Turf(100,0,game, gameMap));
+    //Add groups to canvas
+    state.canvas.saddGroup(Turf(100,0,game, gameMap, iconJson));
+    state.canvas.sadd(leftHud, rightHud);
     state.canvas.srenderAll();
 }
 
