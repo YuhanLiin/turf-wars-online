@@ -11,8 +11,5 @@ module.exports = {
         else this.setOpacity(0);
     },
 
-    //Default empty skill specific update function
-    _update(){},
-
     bind: bind
 };

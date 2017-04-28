@@ -4,12 +4,12 @@ var Input = require('../../game/input.js');
 var Game = require('../../game/game.js');
 
 var playerHudColour = {'you': 'white', 'other': 'red'};
+//Change this later
 Game.inject(function(){}, function(){});
 
 function gameScreen(state, gameMap) {
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
-    var playerInput = state.playerControls.makeInputManager();
 
     //Player1 gets left HUD
     var leftHud = Hud(50, 10, 100, 700, gameMap[0][0], gameMap[0][1], playerHudColour[gameMap[0][0]], 0, 200);
@@ -21,7 +21,7 @@ function gameScreen(state, gameMap) {
     iconJson[gameMap[1][0]] = rightHud.icons;
 
     //Set up game
-    var inputs = {'you': playerInput, 'other': Input()};
+    var inputs = {'you': state.playerControls.makeInputManager(), 'other': Input()};
     var game = Game(gameMap, inputs);
     //Add groups to canvas
     state.canvas.saddGroup(Turf(100,0,game, gameMap, iconJson));

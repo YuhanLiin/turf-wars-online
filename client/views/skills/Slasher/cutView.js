@@ -1,7 +1,7 @@
 var skillView = require('../skillView.js')
 
 //Draw out the cut attack as long as it is active
-function update(){
+function _update(){
     var atk = this.model.attack;
     if (atk.curFrame > 0){
         this.set({
@@ -23,6 +23,8 @@ function CutView() {
         fill: 'red',
         opacity: 0
     }), skillView);
-    view._update = update;
+    view._update = _update;
     return view;
 }
+
+module.exports = CutView;
