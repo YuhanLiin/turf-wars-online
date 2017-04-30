@@ -75,8 +75,8 @@ KeyInput.prototype = {
 
 //Convert keycode to game inputCode via one set of controls
 function Controls() {
-    //Maps keydown keycodes to the type of input. Defaults to WASD for UDLR and JKL; for the 4 skills
-    var keyMap = { '87': 'u', '83': 'd', '65': 'l', '68': 'r', '74': 1, '75': 2, '76': 3, '186': 4, '13': 'enter' };
+    //Maps keydown keycodes to the type of input. Defaults to WASD for UDLR and HJKL for the 4 skills
+    var keyMap = { '87': 'u', '83': 'd', '65': 'l', '68': 'r', '72': 1, '74': 2, '75': 3, '76': 4, '13': 'enter' };
     return {
         //Turns an input handler into a mapped key handler and hook it to keydown or keyup
         registerHandler(type, inputHandler) {
