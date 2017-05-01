@@ -4,16 +4,19 @@ var Turf = require('./turf.js');
 var playerHudColour = { 'you': 'white', 'other': 'red' };
 
 function gameScreen(state, game) {
+    //Reset the canvas but don't touch the controls since they are already configured
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
+    //Make the HUD sidebar for each player
     var huds = [];
     for (let player in game.characters) {
         let char = game.characters[player];
+        //Sidebar positions depend on where player starts
         if (char.posx < 350) {
             huds.push(Hud(50, 10, 100, 700, player, char, playerHudColour[player], 0, 200));
         }
         else {
-            huds.push(Hud(950, 10, 100, 700, player, char, playerHudColour[player], 500, 0));
+            huds.push(Hud(950, 10, 100, 700, player, char, playerHudColour[player], 500, 40));
         }
     }
     

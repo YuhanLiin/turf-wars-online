@@ -20,7 +20,6 @@ function SelectBox(x, y, length, charName){
         left:x,
         top:y
     });
-    box.name = charName;
     return box;
 };
 

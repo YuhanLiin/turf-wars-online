@@ -2,7 +2,7 @@
 var Input = require('../game/input.js');
 var Game = require('../game/game.js');
 
-function createGame(state, gameMap) {
+function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());
@@ -182,16 +182,19 @@ var Turf = require('./turf.js');
 var playerHudColour = { 'you': 'white', 'other': 'red' };
 
 function gameScreen(state, game) {
+    //Reset the canvas but don't touch the controls since they are already configured
     state.reset();
     state.canvas.setBackgroundColor('darkblue');
+    //Make the HUD sidebar for each player
     var huds = [];
     for (let player in game.characters) {
         let char = game.characters[player];
+        //Sidebar positions depend on where player starts
         if (char.posx < 350) {
             huds.push(Hud(50, 10, 100, 700, player, char, playerHudColour[player], 0, 200));
         }
         else {
-            huds.push(Hud(950, 10, 100, 700, player, char, playerHudColour[player], 500, 0));
+            huds.push(Hud(950, 10, 100, 700, player, char, playerHudColour[player], 500, 40));
         }
     }
     
@@ -324,7 +327,7 @@ module.exports = Turf;
 function loadScreen(state, text) {
     state.reset();
     state.playerControls.clear();
-    state.canvas.setBackgroundColor('lightgray');
+    state.canvas.setBackgroundColor('gray');
     //Display input text in middle of screen
     var txtDisplay = new fabric.Text(text, {
         fill: 'white',
@@ -332,7 +335,7 @@ function loadScreen(state, text) {
         originY: 'center',
         textAlign: 'center',
         fontFamily: 'sans-serif',
-        fontSize: 100,
+        fontSize: 60,
         top: 350,
         left: 460
     });
@@ -504,7 +507,6 @@ function SelectBox(x, y, length, charName){
         left:x,
         top:y
     });
-    box.name = charName;
     return box;
 };
 
@@ -516,12 +518,14 @@ var views = require('../views/allViews.js');
 
 //Changes state.canvas to the select screen
 function selectScreen(state) {
+    //Stores dynamic components corresponding to each character so they can be switched around for different selected chars
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
+    var charNames = [];
     var selected = 0;
 
-    //Adds and renders dynamic content pertaining to selected character
+    //Adds and renders dynamic content pertaining to selected character 
     function render(){
         selectBoxes[selected].set('stroke', 'red');
         state.canvas.sadd(charDisplays[selected]);
@@ -557,6 +561,10 @@ function selectScreen(state) {
             else selectRight();
             render();
         }
+        else if (input === 'enter'){
+            var name = charNames[selected];
+            state.selectedChar = name;
+        }
     })
 
     //Title at top
@@ -571,6 +579,7 @@ function selectScreen(state) {
     state.canvas.sadd(title);
     title.centerH();
 
+    //Create character select boxes, character and skill displays for all available characters
     var x = 200;
     for (let charName in views){
         let box = SelectBox(x, 570, 100, charName)
@@ -584,6 +593,8 @@ function selectScreen(state) {
 
         let skillDisplay = display.SkillDisplay(400, 100, 600, 450, charName);
         skillDisplays.push(skillDisplay);
+
+        charNames.push(charName);
     }
     render();
 }
@@ -603,15 +614,12 @@ socket.emit('roomId', roomId);
 socket.on('issue', function (issue) {
     console.log(issue);
 });
-socket.on('startGame', function () {
-    console.log('startGame');
-});
 
 //State accessed by each screen
 var state = {
     updateViewFunctions: [],
     canvas: canvas, 
-    socket: socket, 
+    selectedChar: null,
     playerControls: Controls(),
     //The ID of the animation interval used by loading screen
     intervalId: null,
@@ -626,8 +634,72 @@ var state = {
     }
 }
 
+
+var curScreen = '';
+//Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
+function nextScreen(...args){
+    switch(curScreen){
+        //Before the first call. This will initialize handlers for first loading screen
+        case '':
+            curScreen = 'waitPlayer';
+            //1st load screen
+            loadScreen(state, 'Waiting for player to join');
+            //Go to next screen after receiving notif
+            socket.on('startGame', function(){
+                nextScreen();
+            });
+            break;
+
+        //Waiting for other player to join
+        case 'waitPlayer':
+            curScreen = 'select';
+            //Clear handler from previous screen
+            socket.off('startGame');
+            selectScreen(state);
+            //If enter button is pressed then proceed to next screen
+            state.playerControls.registerHandler('up', function(input){
+                if (input === 'enter') nextScreen(state.selectedChar);
+            })
+            break;
+
+        //Character select
+        case 'select':
+            //Receive character name as param
+            var character = args[0];
+            console.log(curScreen, character)
+            curScreen = 'waitSelect';
+            //2nd load screen and wait for both players to pick character
+            loadScreen(state, 'Waiting for opponent');
+            socket.on('startMatch', function(gameMap){
+                nextScreen(gameMap);
+            });
+            //Tell server of character choice
+            socket.emit('selectChar', character);
+            break;
+
+        //Waiting for both players to pick
+        case 'waitSelect':
+            //Receive game initialization data as param
+            var gameMap = args[0];
+            curScreen = 'game';
+            socket.off('startMatch');
+            //Start the game and game UI. Game bootstrapper will handle the socket calls
+            gameScreen(state, boot(state, gameMap, socket));
+            //TODO handle game result and go on to result screen
+            break;
+
+        case 'game':
+            //TODO
+            break;
+
+        default:
+            console.log('WTF');
+    }
+}
+nextScreen();
+
 //selectScreen(state);
-gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
+//gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');
 },{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./loadScreen/loadScreen.js":7,"./selectScreen/selectScreen.js":11}],13:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
@@ -1416,7 +1488,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
             case 3:
             case 4:
                 this.character.frameSpeed = this.character.baseSpeed * 4;
-                this.character.canMove = true;
+                this.character.isMoving = true;
                 break;
             case this.endFrame:
                 this.character.canTurn = true;

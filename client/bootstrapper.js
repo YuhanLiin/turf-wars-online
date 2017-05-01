@@ -1,7 +1,7 @@
 var Input = require('../game/input.js');
 var Game = require('../game/game.js');
 
-function createGame(state, gameMap) {
+function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());

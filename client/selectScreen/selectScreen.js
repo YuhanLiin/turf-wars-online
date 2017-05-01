@@ -4,12 +4,14 @@ var views = require('../views/allViews.js');
 
 //Changes state.canvas to the select screen
 function selectScreen(state) {
+    //Stores dynamic components corresponding to each character so they can be switched around for different selected chars
     var selectBoxes = [];
     var charDisplays = [];
     var skillDisplays = [];
+    var charNames = [];
     var selected = 0;
 
-    //Adds and renders dynamic content pertaining to selected character
+    //Adds and renders dynamic content pertaining to selected character 
     function render(){
         selectBoxes[selected].set('stroke', 'red');
         state.canvas.sadd(charDisplays[selected]);
@@ -45,6 +47,10 @@ function selectScreen(state) {
             else selectRight();
             render();
         }
+        else if (input === 'enter'){
+            var name = charNames[selected];
+            state.selectedChar = name;
+        }
     })
 
     //Title at top
@@ -59,6 +65,7 @@ function selectScreen(state) {
     state.canvas.sadd(title);
     title.centerH();
 
+    //Create character select boxes, character and skill displays for all available characters
     var x = 200;
     for (let charName in views){
         let box = SelectBox(x, 570, 100, charName)
@@ -72,6 +79,8 @@ function selectScreen(state) {
 
         let skillDisplay = display.SkillDisplay(400, 100, 600, 450, charName);
         skillDisplays.push(skillDisplay);
+
+        charNames.push(charName);
     }
     render();
 }

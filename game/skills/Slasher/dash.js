@@ -18,7 +18,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
             case 3:
             case 4:
                 this.character.frameSpeed = this.character.baseSpeed * 4;
-                this.character.canMove = true;
+                this.character.isMoving = true;
                 break;
             case this.endFrame:
                 this.character.canTurn = true;
