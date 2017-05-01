@@ -6,12 +6,12 @@ function loadScreen(state, text) {
     var txtDisplay = new fabric.Text(text, {
         fill: 'white',
         originX: 'center',
-        originY: 'center',
         textAlign: 'center',
         fontFamily: 'sans-serif',
+        fontWeight: 'bold',
         fontSize: 60,
         top: 350,
-        left: 460
+        left: 500
     });
     state.canvas.sadd(txtDisplay);
     state.canvas.srenderAll();

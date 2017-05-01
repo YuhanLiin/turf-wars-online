@@ -1,16 +1,26 @@
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
-var loadScreen = require('./loadScreen/loadScreen.js');
+var loadScreen = require('./staticScreens/loadScreen.js');
+var endScreen = require('./staticScreens/endScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
 var boot = require('./bootstrapper.js');
 
+//Websockets only
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
+//Consists of waitPlayer, select, waitSelect, game, end
+var curScreen = '';
+
 socket.emit('roomId', roomId);
-//Change issue handling later
+//Log all issues
 socket.on('issue', function (issue) {
     console.log(issue);
 });
+
+//If opponent disconnects, show conclusion screen and set the screen state accordingly
+socket.on('disconnectWin', function(){
+    curScreen = 'end'
+})
 
 //State accessed by each screen
 var state = {
@@ -31,8 +41,6 @@ var state = {
     }
 }
 
-
-var curScreen = '';
 //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
 function nextScreen(...args){
     switch(curScreen){
@@ -63,7 +71,6 @@ function nextScreen(...args){
         case 'select':
             //Receive character name as param
             var character = args[0];
-            console.log(curScreen, character)
             curScreen = 'waitSelect';
             //2nd load screen and wait for both players to pick character
             loadScreen(state, 'Waiting for opponent');
@@ -93,8 +100,9 @@ function nextScreen(...args){
             console.log('WTF');
     }
 }
-nextScreen();
+//nextScreen();
 
+endScreen(state, 'win', 'LOLWTF')
 //selectScreen(state);
 //gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');

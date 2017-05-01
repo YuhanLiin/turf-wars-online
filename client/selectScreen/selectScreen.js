@@ -56,14 +56,15 @@ function selectScreen(state) {
     //Title at top
     var title = new fabric.Text('Select Your Character', {
         textAlign: 'center',
+        originX: 'center',
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         fontSize: 60,
         fill: 'white',
-        top: 20
+        top: 20,
+        left: 500
     })
     state.canvas.sadd(title);
-    title.centerH();
 
     //Create character select boxes, character and skill displays for all available characters
     var x = 200;

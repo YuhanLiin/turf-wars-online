@@ -22,7 +22,7 @@ function createGame(state, gameMap, socket) {
 }
 
 module.exports = createGame;
-},{"../game/game.js":24,"../game/input.js":26}],2:[function(require,module,exports){
+},{"../game/game.js":25,"../game/input.js":27}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
 
@@ -175,7 +175,7 @@ function Controls() {
 
 module.exports = Controls;
 
-},{"../game/input.js":26}],4:[function(require,module,exports){
+},{"../game/input.js":27}],4:[function(require,module,exports){
 var Hud = require('./playerHud.js');
 var Turf = require('./turf.js');
 
@@ -272,7 +272,7 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
     return group;
 }
 module.exports = Hud;
-},{"../views/allViews.js":13}],6:[function(require,module,exports){
+},{"../views/allViews.js":14}],6:[function(require,module,exports){
 var views = require('../views/allViews.js');
 var RealGroup = require('../realGroup.js');
 
@@ -323,39 +323,7 @@ function Turf(x, y, game) {
 
 
 module.exports = Turf;
-},{"../realGroup.js":8,"../views/allViews.js":13}],7:[function(require,module,exports){
-function loadScreen(state, text) {
-    state.reset();
-    state.playerControls.clear();
-    state.canvas.setBackgroundColor('gray');
-    //Display input text in middle of screen
-    var txtDisplay = new fabric.Text(text, {
-        fill: 'white',
-        originX: 'center',
-        originY: 'center',
-        textAlign: 'center',
-        fontFamily: 'sans-serif',
-        fontSize: 60,
-        top: 350,
-        left: 460
-    });
-    state.canvas.sadd(txtDisplay);
-    state.canvas.srenderAll();
-
-    //Number of dots at the end of text, which is incremented
-    var dots = 1;
-    //Animate the text every 100ms
-    state.canvas.intervalId = setInterval(function () {
-        //Dots loop from 1 to 3
-        if (dots >= 3) dots = 1;
-        else dots++;
-        txtDisplay.setText(text + '.'.repeat(dots));
-        state.canvas.renderAll();
-    }, 500);
-}
-
-module.exports = loadScreen;
-},{}],8:[function(require,module,exports){
+},{"../realGroup.js":7,"../views/allViews.js":14}],7:[function(require,module,exports){
 //Fabricjs groups make no sense, so i use this instead
 function RealGroup(components, x, y){
     var group = Object.create(RealGroup.prototype);
@@ -379,7 +347,7 @@ RealGroup.prototype = {
 }
 
 module.exports = RealGroup;
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -484,7 +452,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":13}],10:[function(require,module,exports){
+},{"../views/allViews.js":14}],9:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -511,7 +479,7 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":13}],11:[function(require,module,exports){
+},{"../views/allViews.js":14}],10:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
@@ -570,14 +538,15 @@ function selectScreen(state) {
     //Title at top
     var title = new fabric.Text('Select Your Character', {
         textAlign: 'center',
+        originX: 'center',
         fontFamily: 'sans-serif',
         fontWeight: 'bold',
         fontSize: 60,
         fill: 'white',
-        top: 20
+        top: 20,
+        left: 500
     })
     state.canvas.sadd(title);
-    title.centerH();
 
     //Create character select boxes, character and skill displays for all available characters
     var x = 200;
@@ -600,20 +569,30 @@ function selectScreen(state) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":13,"./dataDisplay.js":9,"./selectBox.js":10}],12:[function(require,module,exports){
+},{"../views/allViews.js":14,"./dataDisplay.js":8,"./selectBox.js":9}],11:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
-var loadScreen = require('./loadScreen/loadScreen.js');
+var loadScreen = require('./staticScreens/loadScreen.js');
+var endScreen = require('./staticScreens/endScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
 var boot = require('./bootstrapper.js');
 
+//Websockets only
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
+//Consists of waitPlayer, select, waitSelect, game, end
+var curScreen = '';
+
 socket.emit('roomId', roomId);
-//Change issue handling later
+//Log all issues
 socket.on('issue', function (issue) {
     console.log(issue);
 });
+
+//If opponent disconnects, show conclusion screen and set the screen state accordingly
+socket.on('disconnectWin', function(){
+    curScreen = 'end'
+})
 
 //State accessed by each screen
 var state = {
@@ -634,8 +613,6 @@ var state = {
     }
 }
 
-
-var curScreen = '';
 //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
 function nextScreen(...args){
     switch(curScreen){
@@ -666,7 +643,6 @@ function nextScreen(...args){
         case 'select':
             //Receive character name as param
             var character = args[0];
-            console.log(curScreen, character)
             curScreen = 'waitSelect';
             //2nd load screen and wait for both players to pick character
             loadScreen(state, 'Waiting for opponent');
@@ -696,12 +672,84 @@ function nextScreen(...args){
             console.log('WTF');
     }
 }
-nextScreen();
+//nextScreen();
 
+endScreen(state, 'win', 'LOLWTF')
 //selectScreen(state);
 //gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');
-},{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./loadScreen/loadScreen.js":7,"./selectScreen/selectScreen.js":11}],13:[function(require,module,exports){
+},{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./selectScreen/selectScreen.js":10,"./staticScreens/endScreen.js":12,"./staticScreens/loadScreen.js":13}],12:[function(require,module,exports){
+var colorMapping = {'win': 'purple', 'lose': 'red', 'draw': 'blue'};
+
+//Screen marking end of the match
+//Result is win, lose, or draw
+function endScreen(state, result, text){
+    state.reset();
+    state.playerControls.clear();
+    console.log(colorMapping[result])
+    state.canvas.setBackgroundColor(colorMapping[result]);
+
+    var titleDisplay = new fabric.Text(('You '+result+'!!!').toUpperCase(), {
+        fill: 'white',
+        originX: 'center',
+        textAlign: 'center',
+        fontFamily: 'sans-serif',
+        fontWeight: 'bold',
+        fontSize: 100,
+        top: 300,
+        left: 500
+    });
+
+    var textDisplay = new fabric.Text(text, {
+        fill: 'white',
+        originX: 'center',
+        textAlign: 'center',
+        fontFamily: 'sans-serif',
+        fontWeight: 'bold',
+        fontSize: 40,
+        top: titleDisplay.getBoundingRectHeight() + titleDisplay.top + 30,
+        left: 500
+    });
+
+    state.canvas.sadd(titleDisplay);
+    state.canvas.sadd(textDisplay);
+    state.canvas.srenderAll();
+}
+
+module.exports = endScreen;
+},{}],13:[function(require,module,exports){
+function loadScreen(state, text) {
+    state.reset();
+    state.playerControls.clear();
+    state.canvas.setBackgroundColor('gray');
+    //Display input text in middle of screen
+    var txtDisplay = new fabric.Text(text, {
+        fill: 'white',
+        originX: 'center',
+        textAlign: 'center',
+        fontFamily: 'sans-serif',
+        fontWeight: 'bold',
+        fontSize: 60,
+        top: 350,
+        left: 500
+    });
+    state.canvas.sadd(txtDisplay);
+    state.canvas.srenderAll();
+
+    //Number of dots at the end of text, which is incremented
+    var dots = 1;
+    //Animate the text every 100ms
+    state.canvas.intervalId = setInterval(function () {
+        //Dots loop from 1 to 3
+        if (dots >= 3) dots = 1;
+        else dots++;
+        txtDisplay.setText(text + '.'.repeat(dots));
+        state.canvas.renderAll();
+    }, 500);
+}
+
+module.exports = loadScreen;
+},{}],14:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var CutView = require('./skills/Slasher/cutView.js');
 var DashView = require('./skills/Slasher/dashView.js');
@@ -736,7 +784,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15', VortexView),
     ]
 };
-},{"./characters/slasherView.js":15,"./skillIcon.js":16,"./skills/Slasher/cutView.js":17,"./skills/Slasher/dashView.js":18,"./skills/Slasher/dodgeView.js":19,"./skills/Slasher/vortexView.js":20}],14:[function(require,module,exports){
+},{"./characters/slasherView.js":16,"./skillIcon.js":17,"./skills/Slasher/cutView.js":18,"./skills/Slasher/dashView.js":19,"./skills/Slasher/dodgeView.js":20,"./skills/Slasher/vortexView.js":21}],15:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -744,7 +792,7 @@ module.exports = function(model){
     //Allow call chaining
     return this;
 }
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Method for syncing view with character state
@@ -788,7 +836,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{"../bind.js":14}],16:[function(require,module,exports){
+},{"../bind.js":15}],17:[function(require,module,exports){
 var bind = require('./bind.js');
 
 //Change height of filter based on how much of the cooldown has passed
@@ -854,7 +902,7 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{"./bind.js":14}],17:[function(require,module,exports){
+},{"./bind.js":15}],18:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 //Draw out the cut attack as long as it is active
@@ -887,13 +935,13 @@ function CutView() {
 }
 
 module.exports = CutView;
-},{"../skillView.js":21}],18:[function(require,module,exports){
+},{"../skillView.js":22}],19:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 module.exports = function(){
     return Object.assign(new fabric.Rect({fill: ''}), skillView);
 }
-},{"../skillView.js":21}],19:[function(require,module,exports){
+},{"../skillView.js":22}],20:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -921,7 +969,7 @@ function DodgeView(){
 }
 
 module.exports = DodgeView;
-},{"../skillView.js":21}],20:[function(require,module,exports){
+},{"../skillView.js":22}],21:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -995,7 +1043,7 @@ function VortexView (){
 }
 
 module.exports = VortexView;
-},{"../skillView.js":21}],21:[function(require,module,exports){
+},{"../skillView.js":22}],22:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Mixin for all skills
@@ -1016,7 +1064,7 @@ module.exports = {
     //If not inherited, this will do nothing
     _update(){}
 };
-},{"../bind.js":14}],22:[function(require,module,exports){
+},{"../bind.js":15}],23:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -1112,7 +1160,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -1129,7 +1177,7 @@ function Slasher(...args) {
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":27,"../skills/Slasher/dash.js":28,"../skills/Slasher/dodge.js":29,"../skills/Slasher/vortex.js":30,"./character.js":22}],24:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":28,"../skills/Slasher/dash.js":29,"../skills/Slasher/dodge.js":30,"../skills/Slasher/vortex.js":31,"./character.js":23}],25:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -1279,7 +1327,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":23}],25:[function(require,module,exports){
+},{"./characters/slasher.js":24}],26:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -1355,7 +1403,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -1425,7 +1473,7 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":32}],27:[function(require,module,exports){
+},{"denque":33}],28:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1467,7 +1515,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":25,"../skill.js":31}],28:[function(require,module,exports){
+},{"../../hitbox.js":26,"../skill.js":32}],29:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1499,7 +1547,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":25,"../skill.js":31}],29:[function(require,module,exports){
+},{"../../hitbox.js":26,"../skill.js":32}],30:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1523,7 +1571,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":25,"../skill.js":31}],30:[function(require,module,exports){
+},{"../../hitbox.js":26,"../skill.js":32}],31:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1556,7 +1604,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":25,"../skill.js":31}],31:[function(require,module,exports){
+},{"../../hitbox.js":26,"../skill.js":32}],32:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1608,7 +1656,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1862,4 +1910,4 @@ Denque.prototype._shrinkArray = function _shrinkArray() {
 
 module.exports = Denque;
 
-},{}]},{},[12]);
+},{}]},{},[11]);
