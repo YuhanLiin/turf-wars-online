@@ -583,17 +583,6 @@ var socket = io('/room',  {transports: ['websocket'], upgrade: false});
 //Consists of waitPlayer, select, waitSelect, game, end
 var curScreen = '';
 
-socket.emit('roomId', roomId);
-//Log all issues
-socket.on('issue', function (issue) {
-    console.log(issue);
-});
-
-//If opponent disconnects, show conclusion screen and set the screen state accordingly
-socket.on('disconnectWin', function(){
-    curScreen = 'end'
-})
-
 //State accessed by each screen
 var state = {
     updateViewFunctions: [],
@@ -612,6 +601,18 @@ var state = {
         }
     }
 }
+
+socket.emit('roomId', roomId);
+//Log all issues
+socket.on('issue', function (issue) {
+    console.log(issue);
+});
+
+//If opponent disconnects, show conclusion screen and set the screen state accordingly
+socket.on('disconnectWin', function(){
+    curScreen = 'end';
+    endScreen(state, 'win', 'since the other guy disconnected');
+})
 
 //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
 function nextScreen(...args){
@@ -672,9 +673,9 @@ function nextScreen(...args){
             console.log('WTF');
     }
 }
-//nextScreen();
+nextScreen();
 
-endScreen(state, 'win', 'LOLWTF')
+//endScreen(state, 'win', 'LOLWTF')
 //selectScreen(state);
 //gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
 //loadScreen(state, 'Loading');
