@@ -25,6 +25,8 @@ function Header(x, y, width, height, playerName, char, textColor){
 function Hud(x, y, width, height, playerName, char, textColor, headerStart, iconStart) {
     //Put header at top
     var header = Header(0, headerStart, width, height * 2 / 7, playerName, char, textColor);
+    //Blue background
+    var bg = new fabric.Rect({left:0, top:0, width:width, height:height, fill:'', originX: 'center', originY: 'top', fill:'darkblue'});
 
     //Generate skill icons vertically and bind them to character skills
      var components = views[char.name].skills.map(function (skill, i) {
@@ -37,7 +39,7 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         return icon;
      });
 
-    components.push(header);
+    components.unshift(bg, header);
     var group = new fabric.Group(components, {
         left: x,
         top: y,
@@ -47,10 +49,10 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         height: height
     });
 
-    //Update all skillIcons; skip the header at the end
+    //Update all skillIcons; skip the header and background at beginning
     function update() {
         group.getObjects().forEach(function (component, i) {
-            if (i < 4) component.update();
+            if (i > 1) component.update();
         });
     }
     group.update = update;

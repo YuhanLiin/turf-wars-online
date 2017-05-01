@@ -3,14 +3,14 @@ var skillView = require('../skillView.js')
 function _update(){
     var skill = this.model;
     var [circle, outerLining, innerLining, bar] = this.getObjects();
+    //Center view onto character and make it visible
     this.set({left: skill.character.posx, top: skill.character.posy});
-    this.setOpacity(1);
-    circle.setOpacity(1);
 
+    //On first 10 frames have the circle expand into the size of character
     if (skill.curFrame <= 10){
-        console.log(circle)
         circle.setRadius(20*skill.curFrame/10);
     }
+    //On last 10 frames turn off all components except the circle, which shrinks into 0
     else if (skill.curFrame >= skill.endFrame-10){
         outerLining.setOpacity(0);
         innerLining.setOpacity(0);
@@ -18,17 +18,19 @@ function _update(){
         var framesLeft = skill.endFrame - skill.curFrame;
         circle.setRadius(20*framesLeft/10)
     }
+    //On active frames make the gray circle larger and put 2 black rings in it
     else{
         outerLining.setOpacity(1);
         innerLining.setOpacity(1);
         bar.setOpacity(1);
         circle.setRadius(35);
-        if (this._spinState <= 5) bar.set({width:20, height:60});
+        //Change orientation of the gray bar every 3 frames to make it look like spinning
+        if (this._spinState <= 3) bar.set({width:20, height:60});
         else bar.set({width:60, height:20});
     }
 
     this._spinState++;
-    if (this._spinState > 10) this._spinState = 1;
+    if (this._spinState > 6) this._spinState = 1;
 }
 
 function VortexView (){

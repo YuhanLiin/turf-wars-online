@@ -16,7 +16,7 @@ function _update(){
 function DodgeView(){
     var view = Object.assign(new fabric.Circle({
         radius: 20,
-        color: 'white',
+        fill: 'white',
         originX: 'center',
         originY: 'center'
     }), skillView);

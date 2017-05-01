@@ -235,6 +235,8 @@ function Header(x, y, width, height, playerName, char, textColor){
 function Hud(x, y, width, height, playerName, char, textColor, headerStart, iconStart) {
     //Put header at top
     var header = Header(0, headerStart, width, height * 2 / 7, playerName, char, textColor);
+    //Blue background
+    var bg = new fabric.Rect({left:0, top:0, width:width, height:height, fill:'', originX: 'center', originY: 'top', fill:'darkblue'});
 
     //Generate skill icons vertically and bind them to character skills
      var components = views[char.name].skills.map(function (skill, i) {
@@ -247,7 +249,7 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         return icon;
      });
 
-    components.push(header);
+    components.unshift(bg, header);
     var group = new fabric.Group(components, {
         left: x,
         top: y,
@@ -257,10 +259,10 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
         height: height
     });
 
-    //Update all skillIcons; skip the header at the end
+    //Update all skillIcons; skip the header and background at beginning
     function update() {
         group.getObjects().forEach(function (component, i) {
-            if (i < 4) component.update();
+            if (i > 1) component.update();
         });
     }
     group.update = update;
@@ -816,43 +818,9 @@ module.exports = CutView;
 },{"../skillView.js":21}],18:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
-function _update(){
-    var skill = this.model;
-    this.setOpacity(1);
-    var lines = this.getObjects();
-    var dir = [0, 1, -1];
-
-    var l = 0
-    for (let i=0; i<3; i++){
-        for (let j=0; j<3; j++){
-            lines[l].x1 = dir[i] * skill.character.radius * skill.character.facex;
-            lines[l].y1 = dir[j] * skill.character.radius * skill.character.facey;
-            l++;
-        }
-    }
-
-    lines.forEach(function(line){
-        line.x2 = line.x1 - 80*skill.character.facex;
-        line.y2 = line.y1 - 80*skill.character.facey;
-    });
+module.exports = function(){
+    return Object.assign(new fabric.Rect({fill: ''}), skillView);
 }
-
-//Needs to be rendered before characters
-function DashView(){
-    //Put 9 lines into the group
-    var lines = []
-    for (let i=0; i<9; i++) 
-        lines.push(new fabric.Line({fill: 'black'}));
-    var view = Object.assign(new fabric.Group(lines, {
-        left: 0,
-        top: 0,
-        opacity: 0
-    }), skillView);
-    view._update = _update;
-    return view;
-}
-
-module.exports = DashView;
 },{"../skillView.js":21}],19:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
@@ -872,7 +840,7 @@ function _update(){
 function DodgeView(){
     var view = Object.assign(new fabric.Circle({
         radius: 20,
-        color: 'white',
+        fill: 'white',
         originX: 'center',
         originY: 'center'
     }), skillView);
@@ -887,14 +855,14 @@ var skillView = require('../skillView.js')
 function _update(){
     var skill = this.model;
     var [circle, outerLining, innerLining, bar] = this.getObjects();
+    //Center view onto character and make it visible
     this.set({left: skill.character.posx, top: skill.character.posy});
-    this.setOpacity(1);
-    circle.setOpacity(1);
 
+    //On first 10 frames have the circle expand into the size of character
     if (skill.curFrame <= 10){
-        console.log(circle)
         circle.setRadius(20*skill.curFrame/10);
     }
+    //On last 10 frames turn off all components except the circle, which shrinks into 0
     else if (skill.curFrame >= skill.endFrame-10){
         outerLining.setOpacity(0);
         innerLining.setOpacity(0);
@@ -902,17 +870,19 @@ function _update(){
         var framesLeft = skill.endFrame - skill.curFrame;
         circle.setRadius(20*framesLeft/10)
     }
+    //On active frames make the gray circle larger and put 2 black rings in it
     else{
         outerLining.setOpacity(1);
         innerLining.setOpacity(1);
         bar.setOpacity(1);
         circle.setRadius(35);
-        if (this._spinState <= 5) bar.set({width:20, height:60});
+        //Change orientation of the gray bar every 3 frames to make it look like spinning
+        if (this._spinState <= 3) bar.set({width:20, height:60});
         else bar.set({width:60, height:20});
     }
 
     this._spinState++;
-    if (this._spinState > 10) this._spinState = 1;
+    if (this._spinState > 6) this._spinState = 1;
 }
 
 function VortexView (){
@@ -960,14 +930,19 @@ var bind = require('../bind.js');
 module.exports = {
     update(){
         var skill = this.model;
+        //Set opacity to full whenever skill is active
         if (skill.curFrame > 0){
+            this.setOpacity(1);
             this._update();
         }
         //Automatically turn off nonactive skill views
         else this.setOpacity(0);
     },
 
-    bind: bind
+    bind: bind,
+
+    //If not inherited, this will do nothing
+    _update(){}
 };
 },{"../bind.js":14}],22:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
