@@ -43,7 +43,7 @@ function createGame(gameMap){
     //Tell clients to start game first
     gameMap.forEach(pair=>sendUpdate('start', pair[0], JSON.stringify(gameMap)));
     //Make game happen after 30ms delay to give clients time to start
-    setTimeout(()=>game.start(), 40);
+    setTimeout(()=>game.start(), 30);
     //For debugging
     return game;
 }

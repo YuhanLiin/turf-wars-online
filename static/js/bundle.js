@@ -8,8 +8,13 @@ function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());
-        state.canvas.srenderAll();
-        fabric.util.requestAnimFrame(tick);
+        //If the page is hidden from view then run updates in background
+        if (document.hidden) setTimeout(tick);
+        //Otherwise render normally
+        else {
+            state.canvas.srenderAll();
+            fabric.util.requestAnimFrame(tick);
+        }
     }
 
     function handleGameUpdates(topic, player, message){
@@ -29,21 +34,21 @@ function createGame(state, gameMap, socket) {
     socket.on('oUpdate', function(input){
         inputs.other.process(input);
     });
-    
+
     game = Game(gameMap, inputs);
 
     return game;
 }
 
 //End the continuous running of the game
-function deleteGame(){
+function endGame(){
     if (game) {
         game.isDone = true;
     }
 }
 
 module.exports.createGame = createGame;
-module.exports.deleteGame = deleteGame;
+module.exports.endGame = endGame;
 },{"../game/game.js":25,"../game/input.js":27}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
@@ -109,7 +114,6 @@ var xmap = { 'l': -1, 'r': 1 };
 
  //Key handler for key down (editing input)
 function downHandler(input) {
-    console.log(input)
     switch (input) {
         case 'u':
         case 'd':
@@ -1299,6 +1303,7 @@ Game.inject = function (nextTick, sendUpdate) {
                         delta = 0;
                         //Should probably send corrective state
                         Object.values(self.inputs).forEach(input=>input.clear());
+                        console.log('frame dump')
                     }
                 }
                 //Propagate to the next tick to gather more delta

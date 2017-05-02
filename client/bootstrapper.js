@@ -7,8 +7,13 @@ function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());
-        state.canvas.srenderAll();
-        fabric.util.requestAnimFrame(tick);
+        //If the page is hidden from view then run updates in background
+        if (document.hidden) setTimeout(tick);
+        //Otherwise render normally
+        else {
+            state.canvas.srenderAll();
+            fabric.util.requestAnimFrame(tick);
+        }
     }
 
     function handleGameUpdates(topic, player, message){
@@ -28,18 +33,18 @@ function createGame(state, gameMap, socket) {
     socket.on('oUpdate', function(input){
         inputs.other.process(input);
     });
-    
+
     game = Game(gameMap, inputs);
 
     return game;
 }
 
 //End the continuous running of the game
-function deleteGame(){
+function endGame(){
     if (game) {
         game.isDone = true;
     }
 }
 
 module.exports.createGame = createGame;
-module.exports.deleteGame = deleteGame;
+module.exports.endGame = endGame;

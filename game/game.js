@@ -79,6 +79,7 @@ Game.inject = function (nextTick, sendUpdate) {
                         delta = 0;
                         //Should probably send corrective state
                         Object.values(self.inputs).forEach(input=>input.clear());
+                        console.log('frame dump')
                     }
                 }
                 //Propagate to the next tick to gather more delta

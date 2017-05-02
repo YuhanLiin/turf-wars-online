@@ -15,7 +15,6 @@ var xmap = { 'l': -1, 'r': 1 };
 
  //Key handler for key down (editing input)
 function downHandler(input) {
-    console.log(input)
     switch (input) {
         case 'u':
         case 'd':
