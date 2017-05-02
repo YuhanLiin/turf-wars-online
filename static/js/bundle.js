@@ -2,6 +2,8 @@
 var Input = require('../game/input.js');
 var Game = require('../game/game.js');
 
+var game;
+
 function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
@@ -10,18 +12,38 @@ function createGame(state, gameMap, socket) {
         fabric.util.requestAnimFrame(tick);
     }
 
-    Game.inject(updateGame, function () { });
+    function handleGameUpdates(topic, player, message){
+        if (topic === 'update'){
+            if (player === 'you') socket.emit('input', message);
+        }
+        //else this.isDone = false;
+    }
+
+    Game.inject(updateGame, handleGameUpdates);
 
     //Clear other inputs
     state.playerControls.clear();
     //Set up game
     var inputs = { 'you': state.playerControls.makeInputManager(), 'other': Input() };
-    var game = Game(gameMap, inputs);
+
+    socket.on('oUpdate', function(input){
+        inputs.other.process(input);
+    });
+    
+    game = Game(gameMap, inputs);
 
     return game;
 }
 
-module.exports = createGame;
+//End the continuous running of the game
+function deleteGame(){
+    if (game) {
+        game.isDone = true;
+    }
+}
+
+module.exports.createGame = createGame;
+module.exports.deleteGame = deleteGame;
 },{"../game/game.js":25,"../game/input.js":27}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
@@ -610,9 +632,26 @@ socket.on('issue', function (issue) {
 
 //If opponent disconnects, show conclusion screen and set the screen state accordingly
 socket.on('disconnectWin', function(){
-    curScreen = 'end';
+    end();
     endScreen(state, 'win', 'since the other guy disconnected');
 })
+
+//Set up conditions for ending screen from any screen. Makes sure endscreen cannot transition to anything else
+function end(){
+    curScreen = 'end';
+    //Clear all event handlers
+    socket.off('startGame');
+    socket.off('startMatch');
+    socket.off('disconnectWin');
+    socket.off('lose');
+    socket.off('win');
+    socket.off('draw');
+    socket.off('oUpdate');
+    //End currently running game
+    boot.endGame();
+    //Clear control handlers
+    state.playerControls.clear();
+}
 
 //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
 function nextScreen(...args){
@@ -661,7 +700,7 @@ function nextScreen(...args){
             curScreen = 'game';
             socket.off('startMatch');
             //Start the game and game UI. Game bootstrapper will handle the socket calls
-            gameScreen(state, boot(state, gameMap, socket));
+            gameScreen(state, boot.createGame(state, gameMap, socket));
             //TODO handle game result and go on to result screen
             break;
 

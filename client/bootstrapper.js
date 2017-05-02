@@ -1,6 +1,8 @@
 var Input = require('../game/input.js');
 var Game = require('../game/game.js');
 
+var game;
+
 function createGame(state, gameMap, socket) {
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
@@ -9,15 +11,35 @@ function createGame(state, gameMap, socket) {
         fabric.util.requestAnimFrame(tick);
     }
 
-    Game.inject(updateGame, function () { });
+    function handleGameUpdates(topic, player, message){
+        if (topic === 'update'){
+            if (player === 'you') socket.emit('input', message);
+        }
+        //else this.isDone = false;
+    }
+
+    Game.inject(updateGame, handleGameUpdates);
 
     //Clear other inputs
     state.playerControls.clear();
     //Set up game
     var inputs = { 'you': state.playerControls.makeInputManager(), 'other': Input() };
-    var game = Game(gameMap, inputs);
+
+    socket.on('oUpdate', function(input){
+        inputs.other.process(input);
+    });
+    
+    game = Game(gameMap, inputs);
 
     return game;
 }
 
-module.exports = createGame;
+//End the continuous running of the game
+function deleteGame(){
+    if (game) {
+        game.isDone = true;
+    }
+}
+
+module.exports.createGame = createGame;
+module.exports.deleteGame = deleteGame;

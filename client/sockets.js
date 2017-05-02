@@ -38,9 +38,26 @@ socket.on('issue', function (issue) {
 
 //If opponent disconnects, show conclusion screen and set the screen state accordingly
 socket.on('disconnectWin', function(){
-    curScreen = 'end';
+    end();
     endScreen(state, 'win', 'since the other guy disconnected');
 })
+
+//Set up conditions for ending screen from any screen. Makes sure endscreen cannot transition to anything else
+function end(){
+    curScreen = 'end';
+    //Clear all event handlers
+    socket.off('startGame');
+    socket.off('startMatch');
+    socket.off('disconnectWin');
+    socket.off('lose');
+    socket.off('win');
+    socket.off('draw');
+    socket.off('oUpdate');
+    //End currently running game
+    boot.endGame();
+    //Clear control handlers
+    state.playerControls.clear();
+}
 
 //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
 function nextScreen(...args){
@@ -89,7 +106,7 @@ function nextScreen(...args){
             curScreen = 'game';
             socket.off('startMatch');
             //Start the game and game UI. Game bootstrapper will handle the socket calls
-            gameScreen(state, boot(state, gameMap, socket));
+            gameScreen(state, boot.createGame(state, gameMap, socket));
             //TODO handle game result and go on to result screen
             break;
 
