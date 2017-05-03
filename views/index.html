@@ -4,13 +4,21 @@
 <head>
     <meta charset="utf-8" />
     <title>Home Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 </head>
 <body>
-    <form action="/room" method="post">      
-        <input type="submit" value="Create your new public room"/>
-    </form>
-    <form action="/lobby" method="post">
-        <input type="submit" value="Join a public room" />
-    </form>
+    <h1 class="text-center page-header" style="color: green; font-size: 70px"><strong>Turf Wars</strong></h1>
+    <div class="row">
+        <div class="col-md-offset-1 col-md-4">
+            <form action="/room" method="post">      
+                <input class="btn btn-default btn-block" type="submit" value="Create your new public room"/>
+            </form>
+        </div>
+        <div class="col-md-offset-2 col-md-4">
+            <form action="/lobby" method="post">
+                <input class="btn btn-default btn-block" type="submit" value="Join a public room" />
+            </form>
+        </div>
+    </div>
 </body>
 </html>
