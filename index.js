@@ -8,7 +8,7 @@ var repo = require("./repository.js")
 var io = require("./sockets").init(http);
 
 //Allow server to run only after redis is flushed
-repo.flushPromise.then(http.listen(8000));
+repo.flushPromise.then(http.listen(process.env.PORT || 8000));
 
 //Send statuscode
 function sendCode(res, statusCode){
