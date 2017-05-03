@@ -3,8 +3,8 @@ describe('InputRecord', function(){
     var assert = require('assert');
 
     it('should update different input types', function(){
-        input.process('nn3');
-        assert.deepStrictEqual(input.get(), [-1, -1, 3]);
+        input.process('nn4');
+        assert.deepStrictEqual(input.get(), [-1, -1, 4]);
     });
 
     it('should queue same-type inputs', function(){
