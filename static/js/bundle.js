@@ -5,6 +5,7 @@ var Game = require('../game/game.js');
 var game;
 
 function createGame(state, gameMap, socket) {
+    //Client nextTick handler
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());
@@ -17,11 +18,14 @@ function createGame(state, gameMap, socket) {
         }
     }
 
+    //Client update handler
     function handleGameUpdates(topic, player, message){
+        //For input updates send the player's inputs to server
         if (topic === 'update'){
             if (player === 'you') socket.emit('input', message);
         }
-        //else this.isDone = false;
+        //For game ending updates just resume the game
+        else this.isDone = false;
     }
 
     Game.inject(updateGame, handleGameUpdates);
@@ -33,6 +37,16 @@ function createGame(state, gameMap, socket) {
 
     socket.on('oUpdate', function(input){
         inputs.other.process(input);
+    });
+
+    socket.on('win', function(){
+        state.nextScreen('win');
+    });
+    socket.on('lose', function(){
+        state.nextScreen('lose');
+    });
+    socket.on('draw', function(){
+        state.nextScreen('draw');
     });
 
     game = Game(gameMap, inputs);
@@ -49,7 +63,7 @@ function endGame(){
 
 module.exports.createGame = createGame;
 module.exports.endGame = endGame;
-},{"../game/game.js":25,"../game/input.js":27}],2:[function(require,module,exports){
+},{"../game/game.js":26,"../game/input.js":28}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
 
@@ -201,7 +215,33 @@ function Controls() {
 
 module.exports = Controls;
 
-},{"../game/input.js":27}],4:[function(require,module,exports){
+},{"../game/input.js":28}],4:[function(require,module,exports){
+function flash(state, color, times, cb=()=>{}) {
+    var current = 0;
+    //Rectangle overlays whole screen when flashing
+    var rect = new fabric.Rect({
+        left: 0, top: 0,
+        fill: color,
+        width: 2000, height: 2000
+    });
+
+    var id = setInterval(function(){
+        //Alternate between remove and add every tick
+        if(current%2) state.canvas.sadd(rect);
+        else state.canvas.remove(rect);
+        //Dont use srender, which updates all values and only works when rendering for actual game
+        state.canvas.renderAll();
+        current++;
+        //Every flash consists of 1 on and 1 off tick plus 1 more to clear before the callback
+        if (current >= times*2 + 1) {
+            clearInterval(id);
+            cb();
+        }
+    }, 150);
+}
+
+module.exports = flash;
+},{}],5:[function(require,module,exports){
 var Hud = require('./playerHud.js');
 var Turf = require('./turf.js');
 
@@ -236,7 +276,7 @@ function gameScreen(state, game) {
 }
 
 module.exports = gameScreen;
-},{"./playerHud.js":5,"./turf.js":6}],5:[function(require,module,exports){
+},{"./playerHud.js":6,"./turf.js":7}],6:[function(require,module,exports){
 var views = require('../views/allViews.js');
 var capitalize = fabric.util.string.capitalize;
 
@@ -298,7 +338,7 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
     return group;
 }
 module.exports = Hud;
-},{"../views/allViews.js":14}],6:[function(require,module,exports){
+},{"../views/allViews.js":15}],7:[function(require,module,exports){
 var views = require('../views/allViews.js');
 var RealGroup = require('../realGroup.js');
 
@@ -349,7 +389,7 @@ function Turf(x, y, game) {
 
 
 module.exports = Turf;
-},{"../realGroup.js":7,"../views/allViews.js":14}],7:[function(require,module,exports){
+},{"../realGroup.js":8,"../views/allViews.js":15}],8:[function(require,module,exports){
 //Fabricjs groups make no sense, so i use this instead
 function RealGroup(components, x, y){
     var group = Object.create(RealGroup.prototype);
@@ -373,7 +413,7 @@ RealGroup.prototype = {
 }
 
 module.exports = RealGroup;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 function CharDisplay(x, y, width, height, charName){
@@ -478,7 +518,7 @@ function SkillDesc(x, y, width, height, skill) {
 
 module.exports.SkillDisplay = SkillDisplay;
 module.exports.CharDisplay = CharDisplay;
-},{"../views/allViews.js":14}],9:[function(require,module,exports){
+},{"../views/allViews.js":15}],10:[function(require,module,exports){
 var views = require('../views/allViews.js');
 
 //Positioned around center
@@ -505,7 +545,7 @@ function SelectBox(x, y, length, charName){
 };
 
 module.exports = SelectBox;
-},{"../views/allViews.js":14}],10:[function(require,module,exports){
+},{"../views/allViews.js":15}],11:[function(require,module,exports){
 var display = require('./dataDisplay.js');
 var SelectBox = require('./selectBox.js');
 var views = require('../views/allViews.js');
@@ -557,7 +597,7 @@ function selectScreen(state) {
         }
         else if (input === 'enter'){
             var name = charNames[selected];
-            state.selectedChar = name;
+            state.nextScreen(name);
         }
     })
 
@@ -595,7 +635,7 @@ function selectScreen(state) {
 }
 
 module.exports = selectScreen;
-},{"../views/allViews.js":14,"./dataDisplay.js":8,"./selectBox.js":9}],11:[function(require,module,exports){
+},{"../views/allViews.js":15,"./dataDisplay.js":9,"./selectBox.js":10}],12:[function(require,module,exports){
 var selectScreen = require('./selectScreen/selectScreen.js');
 var gameScreen = require('./gameScreen/gameScreen.js');
 var loadScreen = require('./staticScreens/loadScreen.js');
@@ -603,6 +643,7 @@ var endScreen = require('./staticScreens/endScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
 var boot = require('./bootstrapper.js');
+var flash = require('./effects/flash.js');
 
 //Websockets only
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
@@ -613,7 +654,6 @@ var curScreen = '';
 var state = {
     updateViewFunctions: [],
     canvas: canvas, 
-    selectedChar: null,
     playerControls: Controls(),
     //The ID of the animation interval used by loading screen
     intervalId: null,
@@ -627,18 +667,6 @@ var state = {
         }
     }
 }
-
-socket.emit('roomId', roomId);
-//Log all issues
-socket.on('issue', function (issue) {
-    console.log(issue);
-});
-
-//If opponent disconnects, show conclusion screen and set the screen state accordingly
-socket.on('disconnectWin', function(){
-    end();
-    endScreen(state, 'win', 'since the other guy disconnected');
-})
 
 //Set up conditions for ending screen from any screen. Makes sure endscreen cannot transition to anything else
 function end(){
@@ -676,11 +704,8 @@ function nextScreen(...args){
             curScreen = 'select';
             //Clear handler from previous screen
             socket.off('startGame');
+            //Let this screen handle inputs and nextScreen calls
             selectScreen(state);
-            //If enter button is pressed then proceed to next screen
-            state.playerControls.registerHandler('up', function(input){
-                if (input === 'enter') nextScreen(state.selectedChar);
-            })
             break;
 
         //Character select
@@ -701,33 +726,65 @@ function nextScreen(...args){
         case 'waitSelect':
             //Receive game initialization data as param
             var gameMap = args[0];
+            console.log(gameMap)
             curScreen = 'game';
             socket.off('startMatch');
-            //Start the game and game UI. Game bootstrapper will handle the socket calls
+            //Start the game and game UI. Game bootstrapper will handle the socket calls and nextScreen calls
             gameScreen(state, boot.createGame(state, gameMap, socket));
             //TODO handle game result and go on to result screen
             break;
 
+        //Use default game ending messages
         case 'game':
-            //TODO
+            var ending = args[0];
+            //Flash a few times before actually ending game
+            var flashColor = (ending === 'lose') ? 'red' : 'black';
+            flash(state, flashColor, 4, function(){
+                end();
+                endScreen(state, ending);
+            });
             break;
 
         default:
             console.log('WTF');
     }
 }
+//Bind this function to state
+state.nextScreen = nextScreen
+
+socket.emit('roomId', roomId);
+//Log all issues
+socket.on('issue', function (issue) {
+    console.log(issue);
+});
+
+//If opponent disconnects, show conclusion screen and set the screen state accordingly
+socket.on('disconnectWin', function(){
+    end();
+    endScreen(state, 'win', 'since the other guy disconnected.');
+})
+
+
 nextScreen();
 
 //endScreen(state, 'win', 'LOLWTF')
 //selectScreen(state);
-//gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
+// gameScreen(state, boot.createGame(state, [['you','Slasher'], ['other','Slasher']], socket));
+// flash(state, 'black', 5)
 //loadScreen(state, 'Loading');
-},{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./gameScreen/gameScreen.js":4,"./selectScreen/selectScreen.js":10,"./staticScreens/endScreen.js":12,"./staticScreens/loadScreen.js":13}],12:[function(require,module,exports){
+},{"./bootstrapper.js":1,"./canvas.js":2,"./controls.js":3,"./effects/flash.js":4,"./gameScreen/gameScreen.js":5,"./selectScreen/selectScreen.js":11,"./staticScreens/endScreen.js":13,"./staticScreens/loadScreen.js":14}],13:[function(require,module,exports){
 var colorMapping = {'win': 'purple', 'lose': 'red', 'draw': 'blue'};
+var messageMapping = {
+    'win': 'You hit the other guy first!',
+    'lose': 'All it takes is one hit!',
+    'draw': 'Both of you died on the exact same frame. Coincidence?'
+};
 
 //Screen marking end of the match
 //Result is win, lose, or draw
 function endScreen(state, result, text){
+    //Default messages available for normal game endings can be overriden
+    text = text || messageMapping[result]
     state.reset();
     state.playerControls.clear();
     console.log(colorMapping[result])
@@ -761,7 +818,7 @@ function endScreen(state, result, text){
 }
 
 module.exports = endScreen;
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 function loadScreen(state, text) {
     state.reset();
     state.playerControls.clear();
@@ -793,7 +850,7 @@ function loadScreen(state, text) {
 }
 
 module.exports = loadScreen;
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var CutView = require('./skills/Slasher/cutView.js');
 var DashView = require('./skills/Slasher/dashView.js');
@@ -828,7 +885,7 @@ module.exports.Slasher = {
         skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15', VortexView),
     ]
 };
-},{"./characters/slasherView.js":16,"./skillIcon.js":17,"./skills/Slasher/cutView.js":18,"./skills/Slasher/dashView.js":19,"./skills/Slasher/dodgeView.js":20,"./skills/Slasher/vortexView.js":21}],15:[function(require,module,exports){
+},{"./characters/slasherView.js":17,"./skillIcon.js":18,"./skills/Slasher/cutView.js":19,"./skills/Slasher/dashView.js":20,"./skills/Slasher/dodgeView.js":21,"./skills/Slasher/vortexView.js":22}],16:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -836,7 +893,7 @@ module.exports = function(model){
     //Allow call chaining
     return this;
 }
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Method for syncing view with character state
@@ -880,7 +937,7 @@ function SlasherView(x, y, radius){
 }
 
 module.exports = SlasherView;
-},{"../bind.js":15}],17:[function(require,module,exports){
+},{"../bind.js":16}],18:[function(require,module,exports){
 var bind = require('./bind.js');
 
 //Change height of filter based on how much of the cooldown has passed
@@ -946,7 +1003,7 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{"./bind.js":15}],18:[function(require,module,exports){
+},{"./bind.js":16}],19:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 //Draw out the cut attack as long as it is active
@@ -979,13 +1036,13 @@ function CutView() {
 }
 
 module.exports = CutView;
-},{"../skillView.js":22}],19:[function(require,module,exports){
+},{"../skillView.js":23}],20:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 module.exports = function(){
     return Object.assign(new fabric.Rect({fill: ''}), skillView);
 }
-},{"../skillView.js":22}],20:[function(require,module,exports){
+},{"../skillView.js":23}],21:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -1013,7 +1070,7 @@ function DodgeView(){
 }
 
 module.exports = DodgeView;
-},{"../skillView.js":22}],21:[function(require,module,exports){
+},{"../skillView.js":23}],22:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -1087,7 +1144,7 @@ function VortexView (){
 }
 
 module.exports = VortexView;
-},{"../skillView.js":22}],22:[function(require,module,exports){
+},{"../skillView.js":23}],23:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Mixin for all skills
@@ -1108,7 +1165,7 @@ module.exports = {
     //If not inherited, this will do nothing
     _update(){}
 };
-},{"../bind.js":15}],23:[function(require,module,exports){
+},{"../bind.js":16}],24:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -1204,7 +1261,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -1221,7 +1278,7 @@ function Slasher(...args) {
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":28,"../skills/Slasher/dash.js":29,"../skills/Slasher/dodge.js":30,"../skills/Slasher/vortex.js":31,"./character.js":23}],25:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":29,"../skills/Slasher/dash.js":30,"../skills/Slasher/dodge.js":31,"../skills/Slasher/vortex.js":32,"./character.js":24}],26:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -1372,7 +1429,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":24}],26:[function(require,module,exports){
+},{"./characters/slasher.js":25}],27:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -1448,7 +1505,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -1518,7 +1575,7 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":33}],28:[function(require,module,exports){
+},{"denque":34}],29:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1560,7 +1617,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":26,"../skill.js":32}],29:[function(require,module,exports){
+},{"../../hitbox.js":27,"../skill.js":33}],30:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1592,7 +1649,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":26,"../skill.js":32}],30:[function(require,module,exports){
+},{"../../hitbox.js":27,"../skill.js":33}],31:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1616,7 +1673,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":26,"../skill.js":32}],31:[function(require,module,exports){
+},{"../../hitbox.js":27,"../skill.js":33}],32:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1649,7 +1706,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":26,"../skill.js":32}],32:[function(require,module,exports){
+},{"../../hitbox.js":27,"../skill.js":33}],33:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1701,7 +1758,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1955,4 +2012,4 @@ Denque.prototype._shrinkArray = function _shrinkArray() {
 
 module.exports = Denque;
 
-},{}]},{},[11]);
+},{}]},{},[12]);

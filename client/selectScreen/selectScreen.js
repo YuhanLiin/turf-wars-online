@@ -49,7 +49,7 @@ function selectScreen(state) {
         }
         else if (input === 'enter'){
             var name = charNames[selected];
-            state.selectedChar = name;
+            state.nextScreen(name);
         }
     })
 

@@ -4,6 +4,7 @@ var Game = require('../game/game.js');
 var game;
 
 function createGame(state, gameMap, socket) {
+    //Client nextTick handler
     function updateGame(tick) {
         //if (game.frameCount < 150 ) console.log(game)
         state.updateViewFunctions.forEach(update=>update());
@@ -16,11 +17,14 @@ function createGame(state, gameMap, socket) {
         }
     }
 
+    //Client update handler
     function handleGameUpdates(topic, player, message){
+        //For input updates send the player's inputs to server
         if (topic === 'update'){
             if (player === 'you') socket.emit('input', message);
         }
-        //else this.isDone = false;
+        //For game ending updates just resume the game
+        else this.isDone = false;
     }
 
     Game.inject(updateGame, handleGameUpdates);
@@ -32,6 +36,16 @@ function createGame(state, gameMap, socket) {
 
     socket.on('oUpdate', function(input){
         inputs.other.process(input);
+    });
+
+    socket.on('win', function(){
+        state.nextScreen('win');
+    });
+    socket.on('lose', function(){
+        state.nextScreen('lose');
+    });
+    socket.on('draw', function(){
+        state.nextScreen('draw');
     });
 
     game = Game(gameMap, inputs);

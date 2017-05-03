@@ -5,6 +5,7 @@ var endScreen = require('./staticScreens/endScreen.js');
 var canvas = require('./canvas.js');
 var Controls = require('./controls.js')
 var boot = require('./bootstrapper.js');
+var flash = require('./effects/flash.js');
 
 //Websockets only
 var socket = io('/room',  {transports: ['websocket'], upgrade: false});
@@ -15,7 +16,6 @@ var curScreen = '';
 var state = {
     updateViewFunctions: [],
     canvas: canvas, 
-    selectedChar: null,
     playerControls: Controls(),
     //The ID of the animation interval used by loading screen
     intervalId: null,
@@ -29,18 +29,6 @@ var state = {
         }
     }
 }
-
-socket.emit('roomId', roomId);
-//Log all issues
-socket.on('issue', function (issue) {
-    console.log(issue);
-});
-
-//If opponent disconnects, show conclusion screen and set the screen state accordingly
-socket.on('disconnectWin', function(){
-    end();
-    endScreen(state, 'win', 'since the other guy disconnected');
-})
 
 //Set up conditions for ending screen from any screen. Makes sure endscreen cannot transition to anything else
 function end(){
@@ -78,11 +66,8 @@ function nextScreen(...args){
             curScreen = 'select';
             //Clear handler from previous screen
             socket.off('startGame');
+            //Let this screen handle inputs and nextScreen calls
             selectScreen(state);
-            //If enter button is pressed then proceed to next screen
-            state.playerControls.registerHandler('up', function(input){
-                if (input === 'enter') nextScreen(state.selectedChar);
-            })
             break;
 
         //Character select
@@ -103,24 +88,49 @@ function nextScreen(...args){
         case 'waitSelect':
             //Receive game initialization data as param
             var gameMap = args[0];
+            console.log(gameMap)
             curScreen = 'game';
             socket.off('startMatch');
-            //Start the game and game UI. Game bootstrapper will handle the socket calls
+            //Start the game and game UI. Game bootstrapper will handle the socket calls and nextScreen calls
             gameScreen(state, boot.createGame(state, gameMap, socket));
             //TODO handle game result and go on to result screen
             break;
 
+        //Use default game ending messages
         case 'game':
-            //TODO
+            var ending = args[0];
+            //Flash a few times before actually ending game
+            var flashColor = (ending === 'lose') ? 'red' : 'black';
+            flash(state, flashColor, 4, function(){
+                end();
+                endScreen(state, ending);
+            });
             break;
 
         default:
             console.log('WTF');
     }
 }
+//Bind this function to state
+state.nextScreen = nextScreen
+
+socket.emit('roomId', roomId);
+//Log all issues
+socket.on('issue', function (issue) {
+    console.log(issue);
+});
+
+//If opponent disconnects, show conclusion screen and set the screen state accordingly
+socket.on('disconnectWin', function(){
+    end();
+    endScreen(state, 'win', 'since the other guy disconnected.');
+})
+
+
 nextScreen();
 
 //endScreen(state, 'win', 'LOLWTF')
 //selectScreen(state);
-//gameScreen(state, boot(state, [['you','Slasher'], ['other','Slasher']]));
+// gameScreen(state, boot.createGame(state, [['you','Slasher'], ['other','Slasher']], socket));
+// flash(state, 'black', 5)
 //loadScreen(state, 'Loading');

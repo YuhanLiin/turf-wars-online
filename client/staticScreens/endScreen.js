@@ -1,8 +1,15 @@
 var colorMapping = {'win': 'purple', 'lose': 'red', 'draw': 'blue'};
+var messageMapping = {
+    'win': 'You hit the other guy first!',
+    'lose': 'All it takes is one hit!',
+    'draw': 'Both of you died on the exact same frame. Coincidence?'
+};
 
 //Screen marking end of the match
 //Result is win, lose, or draw
 function endScreen(state, result, text){
+    //Default messages available for normal game endings can be overriden
+    text = text || messageMapping[result]
     state.reset();
     state.playerControls.clear();
     console.log(colorMapping[result])
