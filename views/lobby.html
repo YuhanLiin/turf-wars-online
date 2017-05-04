@@ -26,12 +26,17 @@
         }
 
         var rooms = {{rooms}};
+        //Wipe the table clean
+        $('#rooms').html('');
+        //Add all current rooms to table
         for (let i=0; i<rooms.length; i++){
             let room = rooms[i];
             add2Rooms(room);
         }
 
+        //ws only
         var socket = io('/lobby',  {transports: ['websocket'], upgrade: false});
+        //Dynamically update page with rooms
         socket.on('add', function(roomId){
             add2Rooms(roomId);
         })

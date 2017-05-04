@@ -48,6 +48,18 @@ http.on('request', function (req, res) {
             var filename = path.replace('/js', '');
             sendFile(res, "/static/js"+filename);
         }  
+        //Lobby will load all currently available roomIds and paste them to the page
+        else if (path === '/lobby') {
+            repo.getRooms()
+            .then(function(rooms){ 
+                sendFile(res, '/views/lobby.html', {rooms:JSON.stringify(rooms)}); 
+            })
+            //Get room errors are 500 errors
+            .catch(function(err){
+                console.log(err);
+                sendCode(res, 500);
+            });
+        }
         else if (!path.startsWith('/socket.io')){
             sendCode(res, 404)
         }
@@ -65,20 +77,8 @@ http.on('request', function (req, res) {
                 sendFile(res, '/views/newRoom.html', {roomId:roomId});  
             });    
         }
-        //Lobby will load all currently available roomIds and paste them to the page
-        else if (path === '/lobby') {
-            repo.getRooms()
-            .then(function(rooms){ 
-                sendFile(res, '/views/lobby.html', {rooms:JSON.stringify(rooms)}); 
-            })
-            //Get room errors are 500 errors
-            .catch(function(err){
-                console.log(err);
-                sendCode(res, 500);
-            });
-        }
-        else{
-            sendCode(res, 404);
+        else if (!path.startsWith('/socket.io')){
+            sendCode(res, 404)
         }
     }
 
