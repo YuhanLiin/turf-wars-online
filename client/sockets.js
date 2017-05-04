@@ -92,7 +92,6 @@ $( window ).on('load', function() {
             case 'waitSelect':
                 //Receive game initialization data as param
                 var gameMap = args[0];
-                console.log(gameMap)
                 curScreen = 'game';
                 socket.off('startMatch');
                 //Start the game and game UI. Game bootstrapper will handle the socket calls and nextScreen calls

@@ -12,7 +12,6 @@ function endScreen(state, result, text){
     text = text || messageMapping[result]
     state.reset();
     state.playerControls.clear();
-    console.log(colorMapping[result])
     state.canvas.setBackgroundColor(colorMapping[result]);
 
     var titleDisplay = new fabric.Text(('You '+result+'!!!').toUpperCase(), {

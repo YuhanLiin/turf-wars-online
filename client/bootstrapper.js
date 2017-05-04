@@ -24,7 +24,9 @@ function createGame(state, gameMap, socket) {
             if (player === 'you') socket.emit('input', message);
         }
         //For game ending updates just resume the game
-        else this.isDone = false;
+        else {
+            this.isDone = false;
+        }
     }
 
     Game.inject(updateGame, handleGameUpdates);

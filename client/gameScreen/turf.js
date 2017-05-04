@@ -13,7 +13,6 @@ function Turf(x, y, game) {
     });
 
     var components = [turf];
-    console.log(views)
     //For each character and skill in game bind to a component view
     Object.keys(game.characters).forEach(function(player){
         var character = game.characters[player];

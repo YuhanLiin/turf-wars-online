@@ -25,7 +25,9 @@ function createGame(state, gameMap, socket) {
             if (player === 'you') socket.emit('input', message);
         }
         //For game ending updates just resume the game
-        else this.isDone = false;
+        else {
+            this.isDone = false;
+        }
     }
 
     Game.inject(updateGame, handleGameUpdates);
@@ -372,7 +374,6 @@ function Turf(x, y, game) {
     });
 
     var components = [turf];
-    console.log(views)
     //For each character and skill in game bind to a component view
     Object.keys(game.characters).forEach(function(player){
         var character = game.characters[player];
@@ -748,7 +749,6 @@ $( window ).on('load', function() {
             case 'waitSelect':
                 //Receive game initialization data as param
                 var gameMap = args[0];
-                console.log(gameMap)
                 curScreen = 'game';
                 socket.off('startMatch');
                 //Start the game and game UI. Game bootstrapper will handle the socket calls and nextScreen calls
@@ -811,7 +811,6 @@ function endScreen(state, result, text){
     text = text || messageMapping[result]
     state.reset();
     state.playerControls.clear();
-    console.log(colorMapping[result])
     state.canvas.setBackgroundColor(colorMapping[result]);
 
     var titleDisplay = new fabric.Text(('You '+result+'!!!').toUpperCase(), {
@@ -1405,7 +1404,7 @@ Game.inject = function (nextTick, sendUpdate) {
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);
                     //Stream the player's input if there is any
-                    sendUpdate('update', player, input.pack(diry, dirx, skillNum))
+                    this.sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
@@ -1436,17 +1435,17 @@ Game.inject = function (nextTick, sendUpdate) {
             }
             //End the game if last man standing or everyone's down
             if (alivePlayerCount <= 1){
+                this.isDone = true;
                 for (let playerId in this.characters){
                     if (playerId === alivePlayer){
-                        sendUpdate('win', playerId);
+                        this.sendUpdate('win', playerId);
                     }
                     //Dead players lose if someone else is alive; draw if everyone is down
                     else{
-                        if (alivePlayerCount === 1) sendUpdate('lose', playerId);
-                        else sendUpdate('draw', playerId);
+                        if (alivePlayerCount === 1) this.sendUpdate('lose', playerId);
+                        else this.sendUpdate('draw', playerId);
                     }
                 }
-                this.isDone = true;
             }
         }
     };

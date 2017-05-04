@@ -42,18 +42,16 @@ function createGame(gameMap){
     var game = games[gameId] = Game(gameMap, inputJson);
     //Tell clients to start game first
     gameMap.forEach(pair=>sendUpdate('start', pair[0], JSON.stringify(gameMap)));
-    //Make game happen after 30ms delay to give clients time to start
-    setTimeout(()=>game.start(), 30);
+    game.start();
     //For debugging
     return game;
 }
 
 //Only send updates to redis if game is not done. Ignore errors
 function sendUpdate(topic, userId, message) {
-    if (!this.isDone){
-        repo.sendOutput(topic, userId, message)
-        .catch(err=>{});
-    }    
+    repo.sendOutput(topic, userId, message)
+    .catch(err=>{});
+  
 }
 
 Game.inject(setTimeout, sendUpdate);

@@ -100,7 +100,7 @@ Game.inject = function (nextTick, sendUpdate) {
                 if (dirx !== undefined) {
                     char.receiveInput(dirx, diry, skillNum);
                     //Stream the player's input if there is any
-                    sendUpdate('update', player, input.pack(diry, dirx, skillNum))
+                    this.sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
@@ -131,17 +131,17 @@ Game.inject = function (nextTick, sendUpdate) {
             }
             //End the game if last man standing or everyone's down
             if (alivePlayerCount <= 1){
+                this.isDone = true;
                 for (let playerId in this.characters){
                     if (playerId === alivePlayer){
-                        sendUpdate('win', playerId);
+                        this.sendUpdate('win', playerId);
                     }
                     //Dead players lose if someone else is alive; draw if everyone is down
                     else{
-                        if (alivePlayerCount === 1) sendUpdate('lose', playerId);
-                        else sendUpdate('draw', playerId);
+                        if (alivePlayerCount === 1) this.sendUpdate('lose', playerId);
+                        else this.sendUpdate('draw', playerId);
                     }
                 }
-                this.isDone = true;
             }
         }
     };
