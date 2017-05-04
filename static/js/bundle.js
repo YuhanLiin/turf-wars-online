@@ -776,7 +776,9 @@ $( window ).on('load', function() {
 
     //Log all issues
     socket.on('issue', function (issue) {
-        console.log(issue);
+        console.log(issue)
+        $('#issue-box').css('display', 'block')
+        $('#issue-box').html(`<strong>Error: ${issue}!</strong> Something went wrong! Try creating another room.`)
     });
 
     //If opponent disconnects, show conclusion screen and set the screen state accordingly

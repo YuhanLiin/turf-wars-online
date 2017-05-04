@@ -10,7 +10,8 @@
 </head>
 
 <body>
-<h1 class="text-center">Available Rooms</h1>
+<h1 class="text-center page-header">Available Rooms</h1>
+<h3 class="text-center" id="empty-message" style="display: none">No one's here right now. Go create a new room!</h3>
 <div class="row"><div class="col-md-8 col-md-offset-2">
 <table class="table table-bordered table-sm">
     <tbody id="rooms">
@@ -26,6 +27,8 @@
         }
 
         var rooms = {{rooms}};
+        //If room is empty, show empty message
+        if (!rooms.length) $('#empty-message').css('display', 'block');
         //Wipe the table clean
         $('#rooms').html('');
         //Add all current rooms to table
@@ -39,9 +42,11 @@
         //Dynamically update page with rooms
         socket.on('add', function(roomId){
             add2Rooms(roomId);
+            $('#empty-message').css('display', 'none');
         })
         .on('delete', function(roomId){
             $('#'+roomId).remove();
+            if ($('#rooms').html() === '') $('#empty-message').css('display', 'block');
         })
     </script>
 </body>
