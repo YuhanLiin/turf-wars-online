@@ -4,10 +4,11 @@ var Projectile = require('../../hitbox.js').Projectile;
 function Grapeshot(character, attackList, projectileList) {
     var skill = Object.assign(Object.create(Grapeshot.prototype), Skill(character));
     skill.projectileList = projectileList;
+    return skill;
 }
 
 Grapeshot.prototype = Object.assign(Object.create(skillView), {
-    cooldown: 25, endFrame: 9,
+    cooldown: 20, endFrame: 9,
     _activeProcess(){
         switch(this.curFrame){
             //Projectile direction will be determined by character direction on frame 1
@@ -25,7 +26,8 @@ Grapeshot.prototype = Object.assign(Object.create(skillView), {
                 var vx = this.shotFacex * 35;
                 var vy = this.shotFacey * 35;
                 this.character.frameSpeed = this.character.baseSpeed;
-                this.projectileList.push(Projectile(10, px, py, vx, vy, 32))
+                //projectile id is g
+                this.projectileList.push(Projectile(10, px, py, vx, vy, 32, 'g'))
                 break;
         }
     }
