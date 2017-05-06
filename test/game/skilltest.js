@@ -103,7 +103,7 @@ describe('All skills', function(){
         });
 
         describe('Vortex', function(){
-            it('should have correct frame data and movement', atkTest(Slasher(gamemock, 500, 500, 0, -1), 4, 1, -20-35, 11, 80, 90, 
+            it('should have correct frame data and movement', atkTest(Slasher(gamemock, 500, 500, 0, -1), 4, 2, -20-35, 11, 80, 90, 
                 function(char, atk){
                     assert.strictEqual(char.frameSpeed, char.baseSpeed, `should slow back down`);
                 },
@@ -128,7 +128,7 @@ describe('All skills', function(){
         });
 
         describe('Dodge', function(){
-            it('should make character invincible', skillTest(Slasher(gamemock, 40, 40, 1, 1), 3, 1, 6, 6,
+            it('should make character invincible', atkTest(Slasher(gamemock, 40, 40, 1, 1), 3, 1, -20-20, 1, 6, 6,
                 function(char){
                     assert(!char.isInvincible, `Should not be invincible`);
                 },

@@ -3,7 +3,7 @@ var Attack = require('../../hitbox.js').Attack;
 
 function Cut(character, attackList, projectileList){
     var skill = Object.assign(Object.create(Cut.prototype), Skill(character));
-    var attackRadius = 20;
+    var attackRadius = 30;
     skill.attack = Attack(attackRadius);
     attackList.push(skill.attack);
     //Distance between center of attack hitbox and center of character
