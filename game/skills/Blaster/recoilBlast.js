@@ -8,7 +8,7 @@ function RecoilBlast(character, attackList, projectileList){
 }
 
 RecoilBlast.prototype = Object.assign(Object.create(Skill.prototype), {
-    cooldown: 5*30, endFrame: 15,
+    cooldown: 5*30, endFrame: 10,
     //Helper method for creating and adding projectile behind character, opposite where it's facing
     _fireShot(){
         var px = this.character.posx - 40*this.character.facex;
@@ -30,11 +30,11 @@ RecoilBlast.prototype = Object.assign(Object.create(Skill.prototype), {
             this._fireShot();
         }
         //One opportunity to turn available on frame 7
-        else if(this.curFrame === 7){
+        else if(this.curFrame === 5){
             this.character.canTurn = true;
         }
         //Fire second shot after turning
-        else if (this.curFrame === 8){
+        else if (this.curFrame === 6){
             this.character.canTurn = false;
             this._fireShot();
         }

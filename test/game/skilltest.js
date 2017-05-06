@@ -161,5 +161,37 @@ describe('All skills', function(){
                 )
             );
         });
+
+        describe('Recoil Blast', function(){
+            it('should move character forward and shoot twice', skillTest(Blaster(gamemock, 400, 350, 1, 0), 2, 2, 10, 10, 
+                function(char){
+                    assert.strictEqual(char.frameSpeed, char.baseSpeed, 'Should move at normal speed'),
+                    assert(char.canTurn, 'Should turn');
+                },
+                function(char, i){
+                    assert.strictEqual(char.frameSpeed, char.baseSpeed*6, `Super speed on frame ${i}`);
+                    assert(char.isMoving, `Should keep moving on frame ${i}`);
+                    if (i === 5){
+                        assert(char.canTurn, 'Should be able to make one turn at frame 5');
+                        //Turn character in another direction
+                        char.receiveInput(0, -1, 0);
+                    }
+                    else{
+                        assert(!char.canTurn, `Should not turn on frame ${i}`);
+                    }
+
+                    if(i === 2){
+                        var proj = char.projectileList[0];
+                        assert(proj.velx < 0 && proj.vely === 0, 'Projectile should move in opposite direction as character');
+                        assert.strictEqual(proj.id, 'r');
+                    }
+                    else if(i === 6){
+                        var proj = char.projectileList[1];
+                        assert(proj.velx === 0 && proj.vely > 0, 'Projectile should move in opposite direction as character');
+                        assert.strictEqual(proj.id, 'r');
+                    }
+                })
+            );
+        })
     })
 });
