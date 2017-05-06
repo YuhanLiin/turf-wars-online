@@ -19,7 +19,7 @@ function _update(){
 //Origin is at center
 function CutView() {
     var view = Object.assign(new fabric.Circle({
-        radius: 20,
+        radius: 30,
         fill: 'red',
         opacity: 0,
         originX: 'center',

@@ -801,7 +801,7 @@ var colorMapping = {'win': 'purple', 'lose': 'red', 'draw': 'blue'};
 var messageMapping = {
     'win': 'You hit the other guy first!',
     'lose': 'All it takes is one hit!',
-    'draw': 'Both of you died on the exact same frame. Coincidence?'
+    'draw': 'Both of you died on the exact same frame!'
 };
 
 //Screen marking end of the match
@@ -882,13 +882,6 @@ var VortexView = require('./skills/Slasher/vortexView.js');
 
 var IconGen = require('./skillIcon.js');
 
-var descriptions = {
-    'Cut': "Quick melee attack that hits right in front of you.",
-    'Dash': "Move a short distance in any of the 8 cardinal directions.",
-    'Dodge': "Evade all attacks for an instant.",
-    'Vortex': "Become invinsible and slice up everything around you for the next 4 seconds."
-}
-
 function skillViewModel(name, description, cooldown, skillView){
     return {
         name: name,
@@ -904,8 +897,8 @@ module.exports.Slasher = {
     skills: [
         skillViewModel('Cut', 'Quick melee attack that hits right in front of you.', '0.5', CutView),
         skillViewModel('Dash', 'Move a short distance in any of the 8 cardinal directions.', '2', DashView),
-        skillViewModel('Dodge', 'Evade all attacks for an instant.', '3.5', DodgeView),
-        skillViewModel('Vortex', 'Become invinsible and slice up everything around you for the next 4 seconds.', '15', VortexView),
+        skillViewModel('Dodge', 'Defensive technique that grants momentary protection and strikes enemies touching you.', '3.5', DodgeView),
+        skillViewModel('Vortex', 'Speed up and slice up everything around you for the next 3 seconds.', '12', VortexView),
     ]
 };
 },{"./characters/slasherView.js":17,"./skillIcon.js":18,"./skills/Slasher/cutView.js":19,"./skills/Slasher/dashView.js":20,"./skills/Slasher/dodgeView.js":21,"./skills/Slasher/vortexView.js":22}],16:[function(require,module,exports){
@@ -1048,7 +1041,7 @@ function _update(){
 //Origin is at center
 function CutView() {
     var view = Object.assign(new fabric.Circle({
-        radius: 20,
+        radius: 30,
         fill: 'red',
         opacity: 0,
         originX: 'center',
@@ -1406,6 +1399,10 @@ Game.inject = function (nextTick, sendUpdate) {
                     //Stream the player's input if there is any
                     this.sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
+                //Stop all character actions to prevent massive desync
+                else{
+                    char.receiveInput(0, 0, 0);
+                }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
                 char.projectileList.forEach(hitbox=>this.checkAllHits(hitbox, player));
@@ -1604,7 +1601,7 @@ var Attack = require('../../hitbox.js').Attack;
 
 function Cut(character, attackList, projectileList){
     var skill = Object.assign(Object.create(Cut.prototype), Skill(character));
-    var attackRadius = 20;
+    var attackRadius = 30;
     skill.attack = Attack(attackRadius);
     attackList.push(skill.attack);
     //Distance between center of attack hitbox and center of character
@@ -1676,20 +1673,37 @@ module.exports = Dash;
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
-function Dodge(character) {
-    return Object.assign(Object.create(Dodge.prototype), Skill(character));
+function Dodge(character, attackList, projectileList) {
+    var skill = Object.assign(Object.create(Dodge.prototype), Skill(character));
+    //The hitbox will cover entire character
+    skill.attack = Attack(character.radius);
+    attackList.push(skill.attack);
+    return skill;
 }
 
 Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
-    cooldown: 30*3.5, endFrame: 6,
+    cooldown: 30*3.5, endFrame: 12,
     _activeProcess() {
         switch (this.curFrame) {
-            //Invincible for first 5 frames, vulnerable last frame
+            //Invincible for first 11 frames, vulnerable last frame. Hitbox covers character the whole time
             case 1:
                 this.character.isInvincible = true;
+                this.attack.activate();
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+                this.attack.reposition(this.character.posx, this.character.posy);
                 break;
             case this.endFrame:
                 this.character.isInvincible = false;
+                this.attack.deactivate();
                 break;
         }
     }
@@ -1708,22 +1722,22 @@ function Vortex(character, attackList, projectileList) {
 }
 
 Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
-    //15 sec cooldown, 4 sec duration
-    cooldown: 30 * 15, endFrame: 30 * 4,
+    //12 sec cooldown, 3 sec duration
+    cooldown: 30 * 12, endFrame: 30 * 3,
     _activeProcess() {
-        //Hitbox and invincibility starts on frame 11
+        //Hitbox and speedup starts on frame 11
         if (this.curFrame === 11) {
-            this.character.isInvincible = true;
+            this.character.frameSpeed = 10;
             this.attack.activate();
         }
         //Hitbox will always be centered around user
         if (this.curFrame >= 11) {
             this.attack.reposition(this.character.posx, this.character.posy);
         }
-        //Hitbox and invincibility ends on last active frame, so 10 frames of vulnerability
+        //Hitbox and speedup ends on last active frame, so 10 frames of vulnerability
         if (this.curFrame === this.endFrame-10) {
             this.attack.deactivate();
-            this.character.isInvincible = false;
+            this.character.frameSpeed = this.character.baseSpeed;
         }
     }
 });

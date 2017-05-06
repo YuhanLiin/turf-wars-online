@@ -2,7 +2,7 @@ var colorMapping = {'win': 'purple', 'lose': 'red', 'draw': 'blue'};
 var messageMapping = {
     'win': 'You hit the other guy first!',
     'lose': 'All it takes is one hit!',
-    'draw': 'Both of you died on the exact same frame. Coincidence?'
+    'draw': 'Both of you died on the exact same frame!'
 };
 
 //Screen marking end of the match

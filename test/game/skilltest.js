@@ -128,7 +128,7 @@ describe('All skills', function(){
         });
 
         describe('Dodge', function(){
-            it('should make character invincible', atkTest(Slasher(gamemock, 40, 40, 1, 1), 3, 1, -20-20, 1, 6, 6,
+            it('should make character invincible', atkTest(Slasher(gamemock, 40, 40, 1, 1), 3, 1, -20-20, 1, 12, 12,
                 function(char){
                     assert(!char.isInvincible, `Should not be invincible`);
                 },
