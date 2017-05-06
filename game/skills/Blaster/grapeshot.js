@@ -1,4 +1,4 @@
-var skillView = require('../skillView.js')
+var Skill = require('../skill.js');
 var Projectile = require('../../hitbox.js').Projectile;
 
 function Grapeshot(character, attackList, projectileList) {
@@ -25,7 +25,7 @@ Grapeshot.prototype = Object.assign(Object.create(skillView), {
                 var vx = this.shotFacex * 35;
                 var vy = this.shotFacey * 35;
                 this.character.frameSpeed = this.character.baseSpeed;
-                this.projectileList.push(Projectile(10, px, py, vx, vy, 25))
+                this.projectileList.push(Projectile(10, px, py, vx, vy, 32))
                 break;
         }
     }
