@@ -99,7 +99,8 @@ describe('All skills', function(){
                     char.posx += 5;
                     char.posy += 10;
                     assert(!char.canTurn, 'No turning');
-                }));
+                })
+            );
         });
 
         describe('Vortex', function(){
@@ -112,7 +113,8 @@ describe('All skills', function(){
                     char.posx -= 2;
                     char.posy -= 2;
                     assert(char.frameSpeed > 7, `should speed up on frame ${i}`);
-                }));
+                })
+            );
         });
 
         describe('Dash', function(){
@@ -124,7 +126,8 @@ describe('All skills', function(){
                 function(char, i){
                     assert(!char.canTurn, `Should not turn on frame ${i}`);
                     assert.strictEqual(char.frameSpeed, char.baseSpeed*4, `Super speed on frame ${i}`);
-                }));
+                })
+            );
         });
 
         describe('Dodge', function(){
@@ -134,7 +137,29 @@ describe('All skills', function(){
                 },
                 function(char, i){
                     assert(char.isInvincible, `Should be invincible on frame ${i}`);
-                }));
+                })
+            );
         });
     });
+
+    var Blaster = require('../../game/characters/blaster.js');
+    describe.only('Blaster', function(){
+        describe('Grapeshot', function(){
+            it('should increase movement speed and set projectile in correct spot', 
+                skillTest(Blaster(gamemock, 40, 40, 1, 1), 1, 1, 8, 9, 
+                    function(char){
+                        assert.strictEqual(char.frameSpeed, char.baseSpeed, 'Should move at normal speed');
+                        var proj = char.projectileList[0];
+                        assert(proj.velx > 0 && proj.vely > 0, 'Projectile should move in same direction as character');
+                        assert(proj.posx > char.posx && proj.posy > char.posy, 
+                            'Projectile should be positioned away from character direction');
+                        assert.strictEqual(proj.id, 'g');
+                    },
+                    function(char, i){
+                        assert(char.frameSpeed > char.baseSpeed, 'Should move at higher speed');
+                    }
+                )
+            );
+        });
+    })
 });

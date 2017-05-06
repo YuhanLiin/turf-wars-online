@@ -7,7 +7,7 @@ function Cannon(character, attackList, projectileList) {
     return skill;
 }
 
-Cannon.prototype = Object.assign(Object.create(skillView), {
+Cannon.prototype = Object.assign(Object.create(Skill.prototype), {
     cooldown: 8*30, endFrame: 7,
     _activeProcess(){
         switch(this.curFrame){

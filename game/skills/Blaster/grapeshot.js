@@ -7,7 +7,7 @@ function Grapeshot(character, attackList, projectileList) {
     return skill;
 }
 
-Grapeshot.prototype = Object.assign(Object.create(skillView), {
+Grapeshot.prototype = Object.assign(Object.create(Skill.prototype), {
     cooldown: 20, endFrame: 9,
     _activeProcess(){
         switch(this.curFrame){
