@@ -7,9 +7,8 @@ var skillFactories = [Cut, Dash, Dodge, Vortex];
 
 function Slasher(...args) {
     var char = Character.apply(undefined, args);
-    char.setSpeed(7);
+    char._setProp(7, skillFactories);
     char.name = 'Slasher';
-    char.skills = skillFactories.map(factory=>factory(char, char.attackList, char.projectileList));
     return char;
 }
 

@@ -7,7 +7,8 @@ describe('Base Character', function(){
     var char;
     beforeEach(function(){
         char = Character(gamemock, 40, 40, 1, 1);
-        char.setSpeed(6);
+        char.baseSpeed = 6;
+        char.frameSpeed = 6;
     });
 
     describe('Character Movement', function(){

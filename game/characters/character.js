@@ -25,10 +25,11 @@ function Character(game, px, py, dx, dy) {
 //All characters will share this prototype
 Character.prototype = {
     radius: 20,
-    //Used to initialize speed
-    setSpeed(speed){
+    //Used to initialize speed and skills
+    _setProp(speed, skillFactories){
         this.baseSpeed = speed;
         this.frameSpeed = speed;
+        this.skills = skillFactories.map(factory=>factory(this, this.attackList, this.projectileList));
     },
 
     move (){
