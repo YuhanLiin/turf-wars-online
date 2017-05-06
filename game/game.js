@@ -102,6 +102,10 @@ Game.inject = function (nextTick, sendUpdate) {
                     //Stream the player's input if there is any
                     this.sendUpdate('update', player, input.pack(diry, dirx, skillNum))
                 }
+                //Stop all character actions to prevent massive desync
+                else{
+                    char.receiveInput(0, 0, 0);
+                }
                 char.frameProcess();
                 char.attackList.forEach(hitbox=>this.checkAllHits(hitbox, player));
                 char.projectileList.forEach(hitbox=>this.checkAllHits(hitbox, player));

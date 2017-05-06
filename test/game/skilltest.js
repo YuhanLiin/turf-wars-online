@@ -103,14 +103,15 @@ describe('All skills', function(){
         });
 
         describe('Vortex', function(){
-            it('should have correct frame data and movement', atkTest(Slasher(gamemock, 500, 500, 0, -1), 4, 1, -20-35, 11, 110, 120, 
+            it('should have correct frame data and movement', atkTest(Slasher(gamemock, 500, 500, 0, -1), 4, 1, -20-35, 11, 80, 90, 
                 function(char, atk){
-                    assert(!char.isInvincible, 'should not be invincible');
+                    assert.strictEqual(char.frameSpeed, char.baseSpeed, `should slow back down`);
                 },
                 function(char, atk, i){
+                    //Movements to test whether the attack follows user
                     char.posx -= 2;
                     char.posy -= 2;
-                    assert(char.isInvincible, `should be invincible on frame ${i}`);
+                    assert(char.frameSpeed > 7, `should speed up on frame ${i}`);
                 }));
         });
 

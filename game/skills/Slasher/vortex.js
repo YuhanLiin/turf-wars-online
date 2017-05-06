@@ -9,22 +9,22 @@ function Vortex(character, attackList, projectileList) {
 }
 
 Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
-    //15 sec cooldown, 4 sec duration
-    cooldown: 30 * 15, endFrame: 30 * 4,
+    //12 sec cooldown, 3 sec duration
+    cooldown: 30 * 12, endFrame: 30 * 3,
     _activeProcess() {
-        //Hitbox and invincibility starts on frame 11
+        //Hitbox and speedup starts on frame 11
         if (this.curFrame === 11) {
-            this.character.isInvincible = true;
+            this.character.frameSpeed = 10;
             this.attack.activate();
         }
         //Hitbox will always be centered around user
         if (this.curFrame >= 11) {
             this.attack.reposition(this.character.posx, this.character.posy);
         }
-        //Hitbox and invincibility ends on last active frame, so 10 frames of vulnerability
+        //Hitbox and speedup ends on last active frame, so 10 frames of vulnerability
         if (this.curFrame === this.endFrame-10) {
             this.attack.deactivate();
-            this.character.isInvincible = false;
+            this.character.frameSpeed = this.character.baseSpeed;
         }
     }
 });
