@@ -1,6 +1,7 @@
 describe('All skills', function(){
     var Skill = require('../../game/skills/skill.js');
     var assert = require('assert');
+    var hitbox = require('../../game/hitbox.js');
 
     describe('Base Skill', function () {
         var skill;
@@ -143,7 +144,7 @@ describe('All skills', function(){
     });
 
     var Blaster = require('../../game/characters/blaster.js');
-    describe.only('Blaster', function(){
+    describe('Blaster', function(){
         describe('Grapeshot', function(){
             it('should increase movement speed and set projectile in correct spot', 
                 skillTest(Blaster(gamemock, 40, 40, 1, 1), 1, 1, 8, 9, 
@@ -192,6 +193,57 @@ describe('All skills', function(){
                     }
                 })
             );
+        });
+
+        describe('Cannon', function(){
+            it('should fire a large projectile and keep character still', 
+                skillTest(Blaster(gamemock, 400, 350, -1, -1), 3, 1, 11, 12,
+                    function(char){
+                        assert(char.canTurn, 'Should be able to turn');
+                        assert.strictEqual(char.frameSpeed, char.baseSpeed, 'Should move normally');
+                        var proj = char.projectileList[0];
+                        assert(proj.velx < 0 && proj.vely < 0, 'Projectile should move in same direction as character');
+                        assert(proj.posx < char.posx && proj.posy < char.posy, 
+                            'Projectile should be positioned away from character direction');
+                        assert(proj.radius > 20, 'Should be large projectile');
+                        assert.strictEqual(proj.id, 'c');
+                    },
+                    function(char, i){
+                        assert.strictEqual(char.frameSpeed, 0, 'Should stop moving');
+                        assert(!char.canTurn, 'Should not turn');
+                    }
+                )
+            )
+        });
+
+        describe('Detonate', function(){
+            //Initialize all character projectiles
+            var char = Blaster(gamemock, 400, 350, -1, -1);
+            char.projectileList.push(
+                hitbox.Projectile(10, 5, 5, 100, 200, 45, 'g'),
+                hitbox.Projectile(20, 5, 5, 100, 200, 45, 'r'),
+                hitbox.Projectile(60, 5, 5, 100, 200, 45, 'c')
+            );
+
+            it('should cause all character projectiles to stop, increase in radius, and shorten lifetime',
+                skillTest(char, 4, 1, 3, 3, 
+                    function(){},
+                    function(char, i){
+                        if (i === 1){
+                            char.projectileList.forEach(
+                                proj=>assert.deepStrictEqual(
+                                    [proj.endFrame, proj.curFrame, proj.velx, proj.vely], 
+                                    [3, 2, 0, 0]
+                                )
+                            );
+                            //Make sure radius changes are correct for different projectile types
+                            assert.strictEqual(char.projectileList[0].radius, 30);
+                            assert.strictEqual(char.projectileList[1].radius, 40);
+                            assert.strictEqual(char.projectileList[2].radius, 80);
+                        }
+                    }
+                )
+            )
         })
-    })
+    });
 });
