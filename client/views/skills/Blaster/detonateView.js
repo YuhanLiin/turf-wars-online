@@ -15,3 +15,5 @@ function DetonateView(){
     view._update = _update;
     return view;
 }
+
+module.exports = DetonateView;

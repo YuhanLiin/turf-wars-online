@@ -65,7 +65,7 @@ function endGame(){
 
 module.exports.createGame = createGame;
 module.exports.endGame = endGame;
-},{"../game/game.js":26,"../game/input.js":28}],2:[function(require,module,exports){
+},{"../game/game.js":32,"../game/input.js":34}],2:[function(require,module,exports){
 //Use this canvas for rest of the game and configure it with methods
 var canvas = new fabric.StaticCanvas('gameScreen', { renderOnAddRemove: false });
 
@@ -235,7 +235,7 @@ function Controls() {
 
 module.exports = Controls;
 
-},{"../game/input.js":28}],4:[function(require,module,exports){
+},{"../game/input.js":34}],4:[function(require,module,exports){
 function flash(state, color, times, cb=()=>{}) {
     var current = 0;
     //Rectangle overlays whole screen when flashing
@@ -876,10 +876,15 @@ module.exports = loadScreen;
 },{}],15:[function(require,module,exports){
 var SlasherView = require('./characters/slasherView.js');
 var CutView = require('./skills/Slasher/cutView.js');
-var DashView = require('./skills/Slasher/dashView.js');
 var DodgeView = require('./skills/Slasher/dodgeView.js');
 var VortexView = require('./skills/Slasher/vortexView.js');
 
+var BlasterView = require('./characters/blasterView.js');
+var GrapeshotView = require('./skills/Blaster/grapeshotView.js');
+var CannonView = require('./skills/Blaster/cannonView.js');
+var DetonateView = require('./skills/Blaster/detonateView.js');
+
+var EmptyView = require('./skills/emptyView.js');
 var IconGen = require('./skillIcon.js');
 
 function skillViewModel(name, description, cooldown, skillView){
@@ -896,12 +901,22 @@ module.exports.Slasher = {
     Sprite: SlasherView,
     skills: [
         skillViewModel('Cut', 'Quick melee attack that hits right in front of you.', '0.5', CutView),
-        skillViewModel('Dash', 'Move a short distance in any of the 8 cardinal directions.', '2', DashView),
+        skillViewModel('Dash', 'Move a short distance in any of the 8 cardinal directions.', '2', EmptyView),
         skillViewModel('Dodge', 'Defensive technique that grants momentary protection and strikes enemies touching you.', '3.5', DodgeView),
         skillViewModel('Vortex', 'Speed up and slice up everything around you for the next 3 seconds.', '12', VortexView),
     ]
 };
-},{"./characters/slasherView.js":17,"./skillIcon.js":18,"./skills/Slasher/cutView.js":19,"./skills/Slasher/dashView.js":20,"./skills/Slasher/dodgeView.js":21,"./skills/Slasher/vortexView.js":22}],16:[function(require,module,exports){
+
+module.exports.Blaster = {
+    Sprite: BlasterView,
+    skills: [
+        skillViewModel('Grapeshot', 'Standard projectile attack that shoots quickly.', '0.7', GrapeshotView),
+        skillViewModel('Recoil Blast', 'Shoot behind yourself twice, launching forward each time.', '6', EmptyView),
+        skillViewModel('Cannon', 'Charge up and fire a large projectile that travels slowly.', '8', CannonView),
+        skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '10', DetonateView),
+    ]
+}
+},{"./characters/blasterView.js":17,"./characters/slasherView.js":19,"./skillIcon.js":20,"./skills/Blaster/cannonView.js":21,"./skills/Blaster/detonateView.js":22,"./skills/Blaster/grapeshotView.js":23,"./skills/Slasher/cutView.js":24,"./skills/Slasher/dodgeView.js":25,"./skills/Slasher/vortexView.js":26,"./skills/emptyView.js":27}],16:[function(require,module,exports){
 //Contains the method used by every view to bind a game model to itself
 //Exposed this.model
 module.exports = function(model){
@@ -910,13 +925,53 @@ module.exports = function(model){
     return this;
 }
 },{}],17:[function(require,module,exports){
+var charView = require('./characterView.js');
+
+function BlasterView(x, y, radius){
+    var outer = new fabric.Circle({
+        radius: radius,
+        fill: 'darkgreen',
+        originX: 'center',
+        originY: 'center'
+    });
+
+    var square = new fabric.Rect({
+        width: Math.sqrt(2)*radius,
+        height: Math.sqrt(2)*radius,
+        originX: 'center',
+        originY: 'center',
+        fill: 'lightgreen'
+    });
+
+    var inner = new fabric.Rect({
+        radius: radius/10,
+        fill: 'darkgreen',
+        originX: 'center',
+        originY: 'center'
+    });
+
+    var view = Object.assign(new fabric.Group([outer, square, inner], {
+        left: x,
+        top: y,
+        originX: 'center',
+        originY: 'center'
+    }), charView);
+    return view;
+}
+
+module.exports = BlasterView;
+},{"./characterView.js":18}],18:[function(require,module,exports){
 var bind = require('../bind.js');
 
-//Method for syncing view with character state
-function updateMethod(){
-    this.setLeft(this.model.posx);
-    this.setTop(this.model.posy);
+module.exports = {
+    bind: bind,
+    update(){
+        this.setLeft(this.model.posx);
+        this.setTop(this.model.posy);
+    }
 }
+},{"../bind.js":16}],19:[function(require,module,exports){
+var charView = require('./characterView.js');
 
 //How Slasher is displayed (3 circles)
 function SlasherView(x, y, radius){
@@ -941,19 +996,17 @@ function SlasherView(x, y, radius){
         originY: 'center'
     });
 
-    var view = new fabric.Group([outer, middle, inner], {
+    var view = Object.assign(new fabric.Group([outer, middle, inner], {
         left: x,
         top: y,
         originX: 'center',
         originY: 'center'
-    });
-    view.update = updateMethod;
-    view.bind = bind;
+    }), charView);
     return view;
 }
 
 module.exports = SlasherView;
-},{"../bind.js":16}],18:[function(require,module,exports){
+},{"./characterView.js":18}],20:[function(require,module,exports){
 var bind = require('./bind.js');
 
 //Change height of filter based on how much of the cooldown has passed
@@ -1019,7 +1072,73 @@ function skillIconGenerator(skillName) {
 
 module.exports = skillIconGenerator;
 
-},{"./bind.js":16}],19:[function(require,module,exports){
+},{"./bind.js":16}],21:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var skill = this.model;
+    var char = skill.character;
+    if (skill.curFrame < skill.endFrame){
+        this.set({left: char.posx + 70*char.facex, top: char.posy + 70*char.facey, 
+            radius: skill.curFrame/skill.endFrame*70});
+    }
+}
+
+function CannonView(){
+    var view = Object.assign(new fabric.Circle({
+        radius: 0,
+        fill: 'black',
+        originX: 'center',
+        originY: 'center'
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = CannonView;
+},{"../skillView.js":28}],22:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var char = this.model.character;
+    this.set({left: char.posx, top: char.posy, opacity: 0.6})
+}
+
+function DetonateView(){
+    var view = Object.assign(new fabric.Circle({
+        radius: 20,
+        fill: 'red',
+        originX: 'center',
+        originY: 'center'
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = DetonateView;
+},{"../skillView.js":28}],23:[function(require,module,exports){
+var skillView = require('../skillView.js')
+
+function _update(){
+    var skill = this.model;
+    this.set({radius: skill.curFrame/skill.endFrame*20, opacity: 0.3, 
+        left: skill.character.posx, top: skill.character.posy});
+}
+
+//Yellow circle that envelops Blaster as skill happens
+function GrapeshotView(){
+    var view = Object.assign(new fabric.Circle({
+        radius: 0,
+        fill: 'yellow',
+        originX: 'center',
+        originY: 'center'
+    }), skillView);
+    view._update = _update;
+    return view;
+}
+
+module.exports = GrapeshotView;
+},{"../skillView.js":28}],24:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 //Draw out the cut attack as long as it is active
@@ -1052,13 +1171,7 @@ function CutView() {
 }
 
 module.exports = CutView;
-},{"../skillView.js":23}],20:[function(require,module,exports){
-var skillView = require('../skillView.js')
-
-module.exports = function(){
-    return Object.assign(new fabric.Rect({fill: ''}), skillView);
-}
-},{"../skillView.js":23}],21:[function(require,module,exports){
+},{"../skillView.js":28}],25:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -1086,7 +1199,7 @@ function DodgeView(){
 }
 
 module.exports = DodgeView;
-},{"../skillView.js":23}],22:[function(require,module,exports){
+},{"../skillView.js":28}],26:[function(require,module,exports){
 var skillView = require('../skillView.js')
 
 function _update(){
@@ -1160,7 +1273,14 @@ function VortexView (){
 }
 
 module.exports = VortexView;
-},{"../skillView.js":23}],23:[function(require,module,exports){
+},{"../skillView.js":28}],27:[function(require,module,exports){
+var skillView = require('./skillView.js')
+
+//View that doesnt show up. Essentially for skills without cosmetic effects
+module.exports = function(){
+    return Object.assign(new fabric.Rect({fill: ''}), skillView);
+}
+},{"./skillView.js":28}],28:[function(require,module,exports){
 var bind = require('../bind.js');
 
 //Mixin for all skills
@@ -1181,7 +1301,24 @@ module.exports = {
     //If not inherited, this will do nothing
     _update(){}
 };
-},{"../bind.js":16}],24:[function(require,module,exports){
+},{"../bind.js":16}],29:[function(require,module,exports){
+var Character = require('./character.js');
+var Grapeshot = require('../skills/Blaster/grapeshot.js');
+var RecoilBlast = require('../skills/Blaster/recoilBlast.js');
+var Cannon = require('../skills/Blaster/cannon.js');
+var Detonate = require('../skills/Blaster/detonate.js');
+var skillFactories = [Grapeshot, RecoilBlast, Cannon, Detonate];
+
+function Blaster(...args){
+    var char = Character.apply(undefined, args);
+    //Moves slower
+    char._setProp(5, skillFactories);
+    char.name = 'Blaster';
+    return char;
+}
+
+module.exports = Blaster;
+},{"../skills/Blaster/cannon.js":35,"../skills/Blaster/detonate.js":36,"../skills/Blaster/grapeshot.js":37,"../skills/Blaster/recoilBlast.js":38,"./character.js":30}],30:[function(require,module,exports){
 var oneroot2 = 1 / Math.sqrt(2);
 
 function Character(game, px, py, dx, dy) {
@@ -1209,10 +1346,11 @@ function Character(game, px, py, dx, dy) {
 //All characters will share this prototype
 Character.prototype = {
     radius: 20,
-    //Used to initialize speed
-    setSpeed(speed){
+    //Used to initialize speed and skills
+    _setProp(speed, skillFactories){
         this.baseSpeed = speed;
         this.frameSpeed = speed;
+        this.skills = skillFactories.map(factory=>factory(this, this.attackList, this.projectileList));
     },
 
     move (){
@@ -1277,7 +1415,7 @@ Character.prototype = {
 };
 
 module.exports = Character;
-},{}],25:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var Character = require('./character.js');
 var Cut = require('../skills/Slasher/cut.js');
 var Dash = require('../skills/Slasher/dash.js');
@@ -1287,14 +1425,13 @@ var skillFactories = [Cut, Dash, Dodge, Vortex];
 
 function Slasher(...args) {
     var char = Character.apply(undefined, args);
-    char.setSpeed(7);
+    char._setProp(7, skillFactories);
     char.name = 'Slasher';
-    char.skills = skillFactories.map(factory=>factory(char, char.attackList, char.projectileList));
     return char;
 }
 
 module.exports = Slasher;
-},{"../skills/Slasher/cut.js":29,"../skills/Slasher/dash.js":30,"../skills/Slasher/dodge.js":31,"../skills/Slasher/vortex.js":32,"./character.js":24}],26:[function(require,module,exports){
+},{"../skills/Slasher/cut.js":39,"../skills/Slasher/dash.js":40,"../skills/Slasher/dodge.js":41,"../skills/Slasher/vortex.js":42,"./character.js":30}],32:[function(require,module,exports){
 //Responsible for input, output, and game loop; characterMap maps playerId to character name; inputJson maps inputManagers to character name
 function Game(characterMap, inputJson){
     var game = Object.create(Game.prototype);
@@ -1322,7 +1459,7 @@ Game.maxTickFrames = 50;
 //Max amount of time to wait for a user input before considering the user to be disconnected
 Game.maxWaitTime = 200;
 //Available characters
-Game.roster = {Slasher: require('./characters/slasher.js')};
+Game.roster = {Slasher: require('./characters/slasher.js'), Blaster: require('./characters/blaster.js')};
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
@@ -1449,7 +1586,7 @@ Game.inject = function (nextTick, sendUpdate) {
 };
 
 module.exports = Game;
-},{"./characters/slasher.js":25}],27:[function(require,module,exports){
+},{"./characters/blaster.js":29,"./characters/slasher.js":31}],33:[function(require,module,exports){
 //Server and client side code. Server will get real hitbox mixin, client mixin will do nothing
 var hitboxMixin = {
     checkHit (otherBox) {
@@ -1497,7 +1634,7 @@ Attack.prototype = Object.assign({
 }, hitboxMixin);
 
 //Attacks managed by the game state; moves automatically and is not saved
-function Projectile(radius, px, py, vx, vy, endFrame){
+function Projectile(radius, px, py, vx, vy, endFrame, id){
     var proj = Object.create(Projectile.prototype);
     proj.radius = radius;
     proj.curFrame = 1;
@@ -1506,6 +1643,8 @@ function Projectile(radius, px, py, vx, vy, endFrame){
     proj.vely = vy;
     proj.posx = px;
     proj.posy = py;
+    //Projectile id for identification
+    proj.id = id;
     return proj;
 }
 
@@ -1525,7 +1664,7 @@ Projectile.prototype = Object.assign({
 
 module.exports.Attack = Attack;
 module.exports.Projectile = Projectile;
-},{}],28:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 //Used server and client side
 
 //Creates new input record
@@ -1595,7 +1734,170 @@ InputRecord.prototype = {
 };
 
 module.exports = InputRecord;
-},{"denque":34}],29:[function(require,module,exports){
+},{"denque":44}],35:[function(require,module,exports){
+var Skill = require('../skill.js');
+var Projectile = require('../../hitbox.js').Projectile;
+
+function Cannon(character, attackList, projectileList) {
+    var skill = Object.assign(Object.create(Cannon.prototype), Skill(character));
+    skill.projectileList = projectileList;
+    return skill;
+}
+
+Cannon.prototype = Object.assign(Object.create(Skill.prototype), {
+    cooldown: 8*30, endFrame: 12,
+    _activeProcess(){
+        switch(this.curFrame){
+            //Character must stand still during duration of entire move
+            case 1:
+                this.character.canTurn = false;
+                this.character.frameSpeed = 0;
+                break;
+            //Fire 50-radius projectile moving at 8 framespeed
+            case this.endFrame-1:
+                var px = this.character.posx + 70*this.character.facex;
+                var py = this.character.posy + 70*this.character.facey;
+                var vx = this.character.facex * 8;
+                var vy = this.character.facey * 8;
+                this.character.canTurn = true;
+                this.character.frameSpeed = this.character.baseSpeed;
+                //Projectile id is c
+                this.projectileList.push(Projectile(50, px, py, vx, vy, 140, 'c'));
+                break;
+        }
+    }
+});
+
+module.exports = Cannon;
+},{"../../hitbox.js":33,"../skill.js":43}],36:[function(require,module,exports){
+var Skill = require('../skill.js');
+var Projectile = require('../../hitbox.js').Projectile;
+
+function Detonate(character, attackList, projectileList){
+    var skill = Object.assign(Object.create(Detonate.prototype), Skill(character));
+    skill.projectileList = projectileList;
+    return skill;
+}
+
+Detonate.prototype = Object.assign(Object.create(Skill.prototype), {
+    cooldown: 30*10, endFrame: 3,
+    _activeProcess(){
+        //Modify all current projectiles on frame 1 according to projectile id
+        if (this.curFrame === 1){
+            this.projectileList.forEach(function(proj){
+                switch(proj.id){
+                    //Grapeshot radius is tripled
+                    case 'g':
+                        proj.radius *= 3;
+                        break;
+                    //Recoil blast is doubled
+                    case 'r':
+                        proj.radius *= 2;
+                        break;
+                    //Cannon is increased
+                    case 'c':
+                        proj.radius = 80;
+                        break;
+                }
+                //All projectiles stop moving and only last for 2 frames after detonation
+                proj.velx = 0;
+                proj.vely = 0;
+                proj.endFrame = 3;
+                proj.curFrame = 1;
+            })
+        }
+    }
+});
+
+module.exports = Detonate;
+},{"../../hitbox.js":33,"../skill.js":43}],37:[function(require,module,exports){
+var Skill = require('../skill.js');
+var Projectile = require('../../hitbox.js').Projectile;
+
+function Grapeshot(character, attackList, projectileList) {
+    var skill = Object.assign(Object.create(Grapeshot.prototype), Skill(character));
+    skill.projectileList = projectileList;
+    return skill;
+}
+
+Grapeshot.prototype = Object.assign(Object.create(Skill.prototype), {
+    cooldown: 20, endFrame: 9,
+    _activeProcess(){
+        switch(this.curFrame){
+            //Projectile direction will be determined by character direction on frame 1
+            case 1:
+                this.shotFacex = this.character.facex;
+                this.shotFacey = this.character.facey;
+                //Make character move faster during entire attack
+                this.character.frameSpeed = 8;
+                break;
+            //Right before the last frame fire a 10-radius shot at 35 frame speed. Last 25 frames
+            case this.endFrame-1:
+                //Projectile starts 40 units away, so can't hit stacked
+                var px = this.character.posx + 40*this.shotFacex;
+                var py = this.character.posy + 40*this.shotFacey;
+                var vx = this.shotFacex * 35;
+                var vy = this.shotFacey * 35;
+                this.character.frameSpeed = this.character.baseSpeed;
+                //projectile id is g
+                this.projectileList.push(Projectile(10, px, py, vx, vy, 32, 'g'))
+                break;
+        }
+    }
+});
+
+module.exports = Grapeshot;
+},{"../../hitbox.js":33,"../skill.js":43}],38:[function(require,module,exports){
+var Skill = require('../skill.js');
+var Projectile = require('../../hitbox.js').Projectile;
+
+function RecoilBlast(character, attackList, projectileList){
+    var skill = Object.assign(Object.create(RecoilBlast.prototype), Skill(character));
+    skill.projectileList = projectileList;
+    return skill;
+}
+
+RecoilBlast.prototype = Object.assign(Object.create(Skill.prototype), {
+    cooldown: 6*30, endFrame: 10,
+    //Helper method for creating and adding projectile behind character, opposite where it's facing
+    _fireShot(){
+        var px = this.character.posx - 40*this.character.facex;
+        var py = this.character.posy - 40*this.character.facey;
+        var vx = this.character.facex * -25;
+        var vy = this.character.facey * -25;
+        //Projectile id is r
+        this.projectileList.push(Projectile(18, px, py, vx, vy, 40, 'r'))
+    },
+    _activeProcess(){
+        //Increased movement every frame
+        if (this.curFrame > 1){
+            this.character.frameSpeed = this.character.baseSpeed * 6;
+            this.character.isMoving = true;
+        }
+        //Cant turn on first 7 frames. Fire a shot
+        if (this.curFrame === 1){
+            this.character.canTurn = false;
+            this._fireShot();
+        }
+        //One opportunity to turn available on frame 7
+        else if(this.curFrame === 5){
+            this.character.canTurn = true;
+        }
+        //Fire second shot after turning
+        else if (this.curFrame === 6){
+            this.character.canTurn = false;
+            this._fireShot();
+        }
+        //Restore defaults
+        else if (this.curFrame === this.endFrame){
+            this.character.frameSpeed = this.character.baseSpeed
+            this.character.canTurn = true;
+        }
+    }
+});
+
+module.exports = RecoilBlast;
+},{"../../hitbox.js":33,"../skill.js":43}],39:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1637,7 +1939,7 @@ Cut.prototype = Object.assign(Object.create(Skill.prototype),
 });
 
 module.exports = Cut;
-},{"../../hitbox.js":27,"../skill.js":33}],30:[function(require,module,exports){
+},{"../../hitbox.js":33,"../skill.js":43}],40:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1669,7 +1971,7 @@ Dash.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dash;
-},{"../../hitbox.js":27,"../skill.js":33}],31:[function(require,module,exports){
+},{"../../hitbox.js":33,"../skill.js":43}],41:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1710,7 +2012,7 @@ Dodge.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Dodge;
-},{"../../hitbox.js":27,"../skill.js":33}],32:[function(require,module,exports){
+},{"../../hitbox.js":33,"../skill.js":43}],42:[function(require,module,exports){
 var Skill = require('../skill.js');
 var Attack = require('../../hitbox.js').Attack;
 
@@ -1743,7 +2045,7 @@ Vortex.prototype = Object.assign(Object.create(Skill.prototype), {
 });
 
 module.exports = Vortex;
-},{"../../hitbox.js":27,"../skill.js":33}],33:[function(require,module,exports){
+},{"../../hitbox.js":33,"../skill.js":43}],43:[function(require,module,exports){
 
 function Skill(character){
     var skill = Object.create(Skill.prototype);
@@ -1795,7 +2097,7 @@ Skill.prototype = {
 //Excluded cooldown, endFrame, _activeProcess
 
 module.exports = Skill;
-},{}],34:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 'use strict';
 
 /**

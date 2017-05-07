@@ -8,7 +8,7 @@ function RecoilBlast(character, attackList, projectileList){
 }
 
 RecoilBlast.prototype = Object.assign(Object.create(Skill.prototype), {
-    cooldown: 5*30, endFrame: 10,
+    cooldown: 6*30, endFrame: 10,
     //Helper method for creating and adding projectile behind character, opposite where it's facing
     _fireShot(){
         var px = this.character.posx - 40*this.character.facex;
