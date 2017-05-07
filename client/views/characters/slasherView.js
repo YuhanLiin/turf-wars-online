@@ -1,10 +1,4 @@
-var bind = require('../bind.js');
-
-//Method for syncing view with character state
-function updateMethod(){
-    this.setLeft(this.model.posx);
-    this.setTop(this.model.posy);
-}
+var charView = require('./characterView.js');
 
 //How Slasher is displayed (3 circles)
 function SlasherView(x, y, radius){
@@ -29,14 +23,12 @@ function SlasherView(x, y, radius){
         originY: 'center'
     });
 
-    var view = new fabric.Group([outer, middle, inner], {
+    var view = Object.assign(new fabric.Group([outer, middle, inner], {
         left: x,
         top: y,
         originX: 'center',
         originY: 'center'
-    });
-    view.update = updateMethod;
-    view.bind = bind;
+    }), charView);
     return view;
 }
 

@@ -25,7 +25,7 @@ Game.maxTickFrames = 50;
 //Max amount of time to wait for a user input before considering the user to be disconnected
 Game.maxWaitTime = 200;
 //Available characters
-Game.roster = {Slasher: require('./characters/slasher.js')};
+Game.roster = {Slasher: require('./characters/slasher.js'), Blaster: require('./characters/blaster.js')};
 
 //Inject 2 dependencies that differ between client and server
 //Next tick schedules the next tick of the game, sendUpdates sends game state to client/server
