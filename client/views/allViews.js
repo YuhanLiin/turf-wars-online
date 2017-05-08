@@ -38,7 +38,7 @@ module.exports.Blaster = {
         skillViewModel('Grapeshot', 'Standard projectile attack that shoots quickly.', '0.7', GrapeshotView),
         skillViewModel('Recoil Blast', 'Shoot behind yourself twice, launching forward each time.', '6', EmptyView),
         skillViewModel('Cannon', 'Charge up and fire a large projectile that travels slowly.', '8', CannonView),
-        skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '10', DetonateView),
+        skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '8', DetonateView),
     ],
     ProjectileView: BlasterProjView
 }

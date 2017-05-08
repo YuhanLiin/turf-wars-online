@@ -3,7 +3,7 @@ var charView = require('./characterView.js');
 function BlasterView(x, y, radius){
     var outer = new fabric.Circle({
         radius: radius,
-        fill: 'turquoise',
+        fill: 'magenta',
         originX: 'center',
         originY: 'center'
     });
@@ -13,17 +13,10 @@ function BlasterView(x, y, radius){
         height: Math.sqrt(2)*radius,
         originX: 'center',
         originY: 'center',
-        fill: 'lightgreen'
+        fill: 'orange'
     });
 
-    var inner = new fabric.Rect({
-        radius: radius/10,
-        fill: 'darkgreen',
-        originX: 'center',
-        originY: 'center'
-    });
-
-    var view = Object.assign(new fabric.Group([outer, square, inner], {
+    var view = Object.assign(new fabric.Group([outer, square], {
         left: x,
         top: y,
         originX: 'center',

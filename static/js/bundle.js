@@ -937,7 +937,7 @@ module.exports.Blaster = {
         skillViewModel('Grapeshot', 'Standard projectile attack that shoots quickly.', '0.7', GrapeshotView),
         skillViewModel('Recoil Blast', 'Shoot behind yourself twice, launching forward each time.', '6', EmptyView),
         skillViewModel('Cannon', 'Charge up and fire a large projectile that travels slowly.', '8', CannonView),
-        skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '10', DetonateView),
+        skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '8', DetonateView),
     ],
     ProjectileView: BlasterProjView
 }
@@ -955,7 +955,7 @@ var charView = require('./characterView.js');
 function BlasterView(x, y, radius){
     var outer = new fabric.Circle({
         radius: radius,
-        fill: 'turquoise',
+        fill: 'magenta',
         originX: 'center',
         originY: 'center'
     });
@@ -965,17 +965,10 @@ function BlasterView(x, y, radius){
         height: Math.sqrt(2)*radius,
         originX: 'center',
         originY: 'center',
-        fill: 'lightgreen'
+        fill: 'orange'
     });
 
-    var inner = new fabric.Rect({
-        radius: radius/10,
-        fill: 'darkgreen',
-        originX: 'center',
-        originY: 'center'
-    });
-
-    var view = Object.assign(new fabric.Group([outer, square, inner], {
+    var view = Object.assign(new fabric.Group([outer, square], {
         left: x,
         top: y,
         originX: 'center',
@@ -1921,7 +1914,7 @@ function Detonate(character, attackList, projectileList){
 }
 
 Detonate.prototype = Object.assign(Object.create(Skill.prototype), {
-    cooldown: 30*10, endFrame: 3,
+    cooldown: 30*8, endFrame: 3,
     _activeProcess(){
         //Modify all current projectiles on frame 1 according to projectile id
         if (this.curFrame === 1){

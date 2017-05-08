@@ -8,7 +8,7 @@ function Detonate(character, attackList, projectileList){
 }
 
 Detonate.prototype = Object.assign(Object.create(Skill.prototype), {
-    cooldown: 30*10, endFrame: 3,
+    cooldown: 30*8, endFrame: 3,
     _activeProcess(){
         //Modify all current projectiles on frame 1 according to projectile id
         if (this.curFrame === 1){
