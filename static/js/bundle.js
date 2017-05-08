@@ -729,6 +729,8 @@ $( window ).on('load', function() {
         boot.endGame();
         //Clear control handlers
         state.playerControls.clear();
+        //Show ending buttons
+        $('#end-buttons').css('display', 'block');
     }
 
     //Modifies the curScreen variable and shows the next screen on canvas. Removes old socket listeners and put on new ones
@@ -800,8 +802,9 @@ $( window ).on('load', function() {
     //Log all issues
     socket.on('issue', function (issue) {
         console.log(issue)
-        $('#issue-box').css('display', 'block')
-        $('#issue-box').html(`<strong>Error: ${issue}!</strong> Something went wrong! Try creating another room.`)
+        $('#issue-box').css('display', 'block');
+        $('#issue-box').html(`<strong>Error: ${issue}!</strong> Something went wrong! Try creating another room.`);
+        $('#end-buttons').css('display', 'block');
     });
 
     //If opponent disconnects, show conclusion screen and set the screen state accordingly

@@ -16,6 +16,19 @@
             <h1 class="text-center page-header">Room {{roomId}}</h1>
             <!-- The issues come up here -->
             <div class="alert alert-danger col-md-6 col-md-offset-3" id="issue-box" style="display: none"></div>
+            <div class="col-md-6 col-md-offset-3" id="end-buttons" style="display: none; margin-bottom: 20px">
+                <div class="col-md-4">
+                    <form action="/" method="get">      
+                        <input class="btn btn-default btn-block" type="submit" value="Back to Home"/>
+                    </form>
+                </div>
+                <div class="col-md-offset-4 col-md-4">
+                    <form action="/room" method="post">
+                        <input type="hidden" name="roomId" value="{{roomId}}">
+                        <input class="btn btn-default btn-block" type="submit" value="Attempt Rematch" />
+                    </form>
+                </div>
+            </div>
             <canvas class="center-block" id="gameScreen" width="800" height="560"></canvas>
     </div>
     <!-- Where the client code goes -->
