@@ -3,7 +3,7 @@ var charView = require('./characterView.js');
 function BlasterView(x, y, radius){
     var outer = new fabric.Circle({
         radius: radius,
-        fill: 'darkgreen',
+        fill: 'turquoise',
         originX: 'center',
         originY: 'center'
     });

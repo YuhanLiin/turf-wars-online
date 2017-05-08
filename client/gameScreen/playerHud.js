@@ -26,7 +26,7 @@ function Hud(x, y, width, height, playerName, char, textColor, headerStart, icon
     //Put header at top
     var header = Header(0, headerStart, width, height * 2 / 7, playerName, char, textColor);
     //Blue background
-    var bg = new fabric.Rect({left:0, top:0, width:width, height:height, fill:'', originX: 'center', originY: 'top', fill:'darkblue'});
+    var bg = new fabric.Rect({left:0, top:0, width:width, height:height, fill:'darkblue', originX: 'center', originY: 'top', fill:'darkblue'});
 
     //Generate skill icons vertically and bind them to character skills
      var components = views[char.name].skills.map(function (skill, i) {

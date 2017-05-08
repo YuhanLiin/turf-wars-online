@@ -49,10 +49,11 @@ canvas.saddGroup = function (realGroup) {
     var self = this;
     realGroup.components.forEach(item=>self.sadd(item));
     this.realGroups.push(realGroup);
+    realGroup.canvas = this;
 }
 
 //Render all entities with realgroup offsets in mind
-canvas.srenderAll = function (realGroup) {
+canvas.srenderAll = function () {
     //Apply realGroup offsets
     this.realGroups.forEach(group=>group.offsetAll());
     //Apply canvas scale resize

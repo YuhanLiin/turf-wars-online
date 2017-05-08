@@ -7,6 +7,7 @@ var BlasterView = require('./characters/blasterView.js');
 var GrapeshotView = require('./skills/Blaster/grapeshotView.js');
 var CannonView = require('./skills/Blaster/cannonView.js');
 var DetonateView = require('./skills/Blaster/detonateView.js');
+var BlasterProjView = require('./projectiles/blasterProjView.js');
 
 var EmptyView = require('./skills/emptyView.js');
 var IconGen = require('./skillIcon.js');
@@ -38,5 +39,6 @@ module.exports.Blaster = {
         skillViewModel('Recoil Blast', 'Shoot behind yourself twice, launching forward each time.', '6', EmptyView),
         skillViewModel('Cannon', 'Charge up and fire a large projectile that travels slowly.', '8', CannonView),
         skillViewModel('Killer Queen', 'Instantly cause all of your projectiles to explode.', '10', DetonateView),
-    ]
+    ],
+    ProjectileView: BlasterProjView
 }

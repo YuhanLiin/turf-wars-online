@@ -22,9 +22,12 @@ function gameScreen(state, game) {
     
     var turf = Turf(100, 0, game);
     //Add groups to canvas
+    turf.projViews.forEach(projView=>state.canvas.saddGroup(projView));
     state.canvas.saddGroup(turf);
     state.canvas.sadd(huds[0]);
+    huds[0].moveTo(10);
     state.canvas.sadd(huds[1]);
+    huds[1].moveTo(10);
     state.canvas.srenderAll();
 
     state.updateViewFunctions.push(turf.update, huds[0].update, huds[1].update);

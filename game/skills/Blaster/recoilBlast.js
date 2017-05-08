@@ -13,8 +13,8 @@ RecoilBlast.prototype = Object.assign(Object.create(Skill.prototype), {
     _fireShot(){
         var px = this.character.posx - 40*this.character.facex;
         var py = this.character.posy - 40*this.character.facey;
-        var vx = this.character.facex * -25;
-        var vy = this.character.facey * -25;
+        var vx = this.character.facex * -20;
+        var vy = this.character.facey * -20;
         //Projectile id is r
         this.projectileList.push(Projectile(18, px, py, vx, vy, 40, 'r'))
     },

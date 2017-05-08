@@ -2,7 +2,7 @@ var skillView = require('../skillView.js')
 
 function _update(){
     var skill = this.model;
-    this.set({radius: skill.curFrame/skill.endFrame*20, opacity: 0.3, 
+    this.set({radius: skill.curFrame/skill.endFrame*20, opacity: 0.5, 
         left: skill.character.posx, top: skill.character.posy});
 }
 

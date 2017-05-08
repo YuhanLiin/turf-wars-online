@@ -13,6 +13,7 @@ function Turf(x, y, game) {
     });
 
     var components = [turf];
+    var projViews = [];
     //For each character and skill in game bind to a component view
     Object.keys(game.characters).forEach(function(player){
         var character = game.characters[player];
@@ -22,13 +23,22 @@ function Turf(x, y, game) {
         views[character.name].skills.forEach(function(skill, i){
             //Bind each skill to views
             components.push(skill.Sprite().bind(character.skills[i]));
-        })
+        });
+        if (views[character.name].ProjectileView) {
+            var projViewGroup = views[character.name].ProjectileView(character.projectileList, x, y);
+            projViews.push(projViewGroup);
+        }
     });
 
     var group = RealGroup(components, x, y);
+    group.projViews = projViews;
 
     //Call update on all components other than the green backdrop
     function update() {
+        //Update all projectile views
+        group.projViews.forEach(function(projView){
+            projView.update();
+        });
         group.components.forEach(function (view, i) {
             if (i !== 0) {
                 view.update();

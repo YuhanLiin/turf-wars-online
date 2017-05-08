@@ -30,7 +30,7 @@ Detonate.prototype = Object.assign(Object.create(Skill.prototype), {
                 //All projectiles stop moving and only last for 2 frames after detonation
                 proj.velx = 0;
                 proj.vely = 0;
-                proj.endFrame = 3;
+                proj.endFrame = 5;
                 proj.curFrame = 1;
             })
         }

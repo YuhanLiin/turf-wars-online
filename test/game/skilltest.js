@@ -233,7 +233,7 @@ describe('All skills', function(){
                             char.projectileList.forEach(
                                 proj=>assert.deepStrictEqual(
                                     [proj.endFrame, proj.curFrame, proj.velx, proj.vely], 
-                                    [3, 2, 0, 0]
+                                    [5, 2, 0, 0]
                                 )
                             );
                             //Make sure radius changes are correct for different projectile types
